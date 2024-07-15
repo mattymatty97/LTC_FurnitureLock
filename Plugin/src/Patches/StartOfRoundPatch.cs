@@ -1,6 +1,8 @@
-﻿using FurnitureLock.Config;
+﻿using System;
+using FurnitureLock.Config;
 using HarmonyLib;
 using UnityEngine;
+using UnityEngine.Pool;
 
 namespace FurnitureLock.Patches;
 
@@ -10,7 +12,7 @@ internal class StartOfRoundPatch
 
     [HarmonyPrefix]
     [HarmonyPatch(nameof(StartOfRound.Start))]
-    [HarmonyPriority(Priority.Last)]
+    [HarmonyPriority(Priority.First)]
     private static void BeforeStart(StartOfRound __instance)
     {
         if (!__instance.IsServer)
@@ -29,8 +31,14 @@ internal class StartOfRoundPatch
 
             if (FurnitureLock.PluginConfig.UnlockableConfigs.ContainsKey(unlockable))
                 continue;
-
-            FurnitureLock.PluginConfig.UnlockableConfigs[unlockable] = new UnlockableConfig(unlockable, index);
+            try
+            {
+                FurnitureLock.PluginConfig.UnlockableConfigs[unlockable] = new UnlockableConfig(unlockable, index);
+            }
+            catch (Exception ex)
+            {
+                FurnitureLock.Log.LogError(ex);
+            }
         }
 
         FurnitureLock.PluginConfig.CleanAndSave();
@@ -43,6 +51,22 @@ internal class StartOfRoundPatch
     {
         if (!__instance.IsServer)
             return;
+
+        if (!ES3.KeyExists("UnlockedShipObjects", GameNetworkManager.Instance.currentSaveFileName))
+        {
+            using (ListPool<int>.Get(out var intList))
+            {
+                for (int i = 0; i < __instance.unlockablesList.unlockables.Count; i++)
+                {
+                    var unlockable = __instance.unlockablesList.unlockables[i];
+                    if (unlockable.alreadyUnlocked)
+                        intList.Add(i);
+                }
+                
+                ES3.Save<int[]>("UnlockedShipObjects", intList.ToArray(), GameNetworkManager.Instance.currentSaveFileName);
+            }
+        }
+        
         
         foreach (var unlockable in __instance.unlockablesList.unlockables)
         {
