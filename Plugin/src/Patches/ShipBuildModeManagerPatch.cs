@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using HarmonyLib;
+﻿using HarmonyLib;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -21,24 +18,16 @@ internal class ShipBuildModeManagerPatch
         if (!objectRef.TryGet(out var networkObject))
             return;
     
-        FurnitureLock.Log.LogDebug($"StoreObjectServerRpc 1");
-    
         var shipObject = networkObject.gameObject.GetComponentInChildren<PlaceableShipObject>();
         if (shipObject == null)
             return;
-    
-        FurnitureLock.Log.LogDebug($"StoreObjectServerRpc 2");
     
         var unlockable = StartOfRound.Instance.unlockablesList.unlockables[shipObject.unlockableID];
         if(!unlockable.inStorage)
             return;
     
-        FurnitureLock.Log.LogDebug($"StoreObjectServerRpc 3");
-    
         if (!FurnitureLock.PluginConfig.UnlockableConfigs.TryGetValue(unlockable, out var config))
             return;
-    
-        FurnitureLock.Log.LogDebug($"StoreObjectServerRpc 4");
     
         if (!config.Locked)
             return;

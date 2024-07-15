@@ -10,8 +10,8 @@ namespace FurnitureLock.Config;
 
 public class UnlockableConfig
 {
-    public UnlockableItem Unlockable { get; private set; }
-    public int UnlockableID { get; private set; }
+    public UnlockableItem Unlockable { get; }
+    public int UnlockableID { get; }
     public Vector3 Position { get; set; }
     public Vector3 Rotation { get; set; }
     public bool Locked { get; set; }
@@ -179,22 +179,4 @@ public class UnlockableConfig
             _defaultRotation = placementRotation;
         }
     }
-
-    public bool Equals(UnlockableConfig other)
-    {
-        return Equals(Unlockable, other.Unlockable);
-    }
-
-    public override bool Equals(object obj)
-    {
-        return obj is UnlockableConfig other && Equals(other);
-    }
-
-    public override int GetHashCode()
-    {
-        return (Unlockable != null ? Unlockable.GetHashCode() : 0);
-    }
-
-    public static bool operator ==(UnlockableConfig o1, UnlockableConfig o2) => o1.Equals(o2);
-    public static bool operator !=(UnlockableConfig o1, UnlockableConfig o2) => !o1.Equals(o2);
 }
