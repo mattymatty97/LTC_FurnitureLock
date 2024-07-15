@@ -1,3 +1,6 @@
+### v1.2.1
+- added Apply button to move furniture to config values
+
 ### v1.2.0
 - fix new lobby not applying values
 

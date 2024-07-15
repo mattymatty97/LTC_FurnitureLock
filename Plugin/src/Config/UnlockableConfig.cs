@@ -56,10 +56,19 @@ public class UnlockableConfig
                 () =>
                 {
                     var pos = unlockable.placedPosition;
-                    PositionConfig.Value = $"{pos.x}, {pos.y}, {pos.z}";
+                    PositionConfig.Value = $"{pos.x.ToString(CultureInfo.InvariantCulture)}, {pos.y.ToString(CultureInfo.InvariantCulture)}, {pos.z.ToString(CultureInfo.InvariantCulture)}";
                     var rot = unlockable.placedRotation;
-                    RotationConfig.Value = $"{rot.x}, {rot.y}, {rot.z}";
+                    RotationConfig.Value = $"{rot.x.ToString(CultureInfo.InvariantCulture)}, {rot.y.ToString(CultureInfo.InvariantCulture)}, {rot.z.ToString(CultureInfo.InvariantCulture)}";
                     FurnitureLock.PluginConfig.CleanAndSave();
+                });
+            LethalConfigProxy.AddButton(strippedName, "Apply values", "apply current config values", "Apply",
+                () =>
+                {
+                    if (StartOfRound.Instance != null &&
+                        StartOfRound.Instance.SpawnedShipUnlockables.TryGetValue(UnlockableID, out var gameObject))
+                    {
+                        ShipBuildModeManager.Instance.PlaceShipObjectServerRpc(Position, Rotation, gameObject, -1);
+                    }
                 });
         }
 
@@ -90,7 +99,7 @@ public class UnlockableConfig
 
             var newPos = new Vector3(posArray[0], posArray[1], posArray[2]);
             
-            if (newPos == Vector3.zero)
+            if (newPos.Equals(Vector3.zero))
                 newPos = _defaultPosition;
 
             Position = newPos;
@@ -105,7 +114,7 @@ public class UnlockableConfig
 
             var newRot = new Vector3(posArray[0], posArray[1], posArray[2]);
             
-            if (newRot == Vector3.zero)
+            if (newRot.Equals(Vector3.zero))
                 newRot = _defaultRotation;
 
             Rotation = newRot;
@@ -114,11 +123,7 @@ public class UnlockableConfig
         void OnLockedConfigOnSettingChanged()
         {
             Locked = LockedConfig.Value;
-            if (Locked && StartOfRound.Instance != null &&
-                StartOfRound.Instance.SpawnedShipUnlockables.TryGetValue(UnlockableID, out var gameObject))
-            {
-                ShipBuildModeManager.Instance.PlaceShipObjectServerRpc(Position, Rotation, gameObject, -1);
-            }
+            
         }
         
 
