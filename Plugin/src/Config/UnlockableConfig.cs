@@ -114,6 +114,11 @@ public class UnlockableConfig
         void OnLockedConfigOnSettingChanged()
         {
             Locked = LockedConfig.Value;
+            if (Locked && StartOfRound.Instance != null &&
+                StartOfRound.Instance.SpawnedShipUnlockables.TryGetValue(UnlockableID, out var gameObject))
+            {
+                ShipBuildModeManager.Instance.PlaceShipObjectServerRpc(Position, Rotation, gameObject, -1);
+            }
         }
         
 

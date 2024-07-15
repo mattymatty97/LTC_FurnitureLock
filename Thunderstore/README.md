@@ -25,7 +25,6 @@ FurnitureLock
 ## Notes:
 - ### config change
   - all changes will apply immediately ( no restart required )
-  - to apply lock try and move the furniture
 
 Installation
 ------------
