@@ -6,10 +6,26 @@ FurnitureLock
 
 ### Nail Furniture into place
 
+## Features:
 - set default position to any movable furniture piece
 - lock them into place ( prevent moving and/or storing )
 - LethalConfig integration for easily copying positions
 - Fully Server-Only, no client installation required
+
+## Expected behaviour:
+- ### furniture at default config:
+  - no changes from vanilla
+- ### furniture unlocked but with custom values
+  - furniture will be placed at custom values only the first time it is spawned
+- ### furniture locked
+  - furniture will always be placed at the custom values ( if values are default will spawn at vanilla default )
+  - any attempt at moving the furniture will result in it returning at the custom values
+  - any attempt at storing the furniture will fail
+
+## Notes:
+- ### config change
+  - all changes will apply immediately ( no restart required )
+  - to apply lock try and move the furniture
 
 Installation
 ------------

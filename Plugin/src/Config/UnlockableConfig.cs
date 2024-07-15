@@ -11,19 +11,24 @@ namespace FurnitureLock.Config;
 public class UnlockableConfig
 {
     public UnlockableItem Unlockable { get; private set; }
+    public int UnlockableID { get; private set; }
     public Vector3 Position { get; set; }
     public Vector3 Rotation { get; set; }
-    
-    private Vector3 _defaultPosition;
-    private Vector3 _defaultRotation;
     public bool Locked { get; set; }
+    
+    public bool Stored { get; set; }
     internal ConfigEntry<string> PositionConfig { get; private set; }
     internal ConfigEntry<string> RotationConfig { get; private set; }
     internal ConfigEntry<bool> LockedConfig { get; private set; }
+    internal ConfigEntry<bool> StoredConfig { get; private set; }
+    
+    private Vector3 _defaultPosition;
+    private Vector3 _defaultRotation;
 
-    public UnlockableConfig(UnlockableItem unlockable)
+    public UnlockableConfig(UnlockableItem unlockable, int unlockableID)
     {
         Unlockable = unlockable;
+        UnlockableID = unlockableID;
         
         FurnitureLock.Log.LogInfo($"Registering {unlockable.unlockableName}");
         
@@ -37,12 +42,16 @@ public class UnlockableConfig
         PositionConfig = config.Bind(strippedName, "position", "0, 0, 0", "default position of the Furniture piece.\nVector3.zero means vanilla default");
         RotationConfig = config.Bind(strippedName, "rotation", "0, 0, 0", "default rotation of the Furniture piece.\nVector3.zero means vanilla default");
         LockedConfig = config.Bind(strippedName, "locked", false, "if true the furniture piece will not be movable");
+        if (unlockable.canBeStored)
+            StoredConfig = config.Bind(strippedName, "spawn_stored", false, "if true the furniture piece will be stored immediately upon spawn");
         
         if (LethalConfigProxy.Enabled)
         {
             LethalConfigProxy.AddConfig(PositionConfig);
             LethalConfigProxy.AddConfig(RotationConfig);
             LethalConfigProxy.AddConfig(LockedConfig);
+            if (unlockable.canBeStored)
+                LethalConfigProxy.AddConfig(StoredConfig);
             LethalConfigProxy.AddButton(strippedName, "Set Values", "copy current position and rotation to config", "Copy",
                 () =>
                 {
@@ -63,7 +72,13 @@ public class UnlockableConfig
         OnLockedConfigOnSettingChanged();
         LockedConfig.SettingChanged += (_, _) => OnLockedConfigOnSettingChanged();
         
-        FurnitureLock.Log.LogDebug($"{unlockable.unlockableName} pos: {Position} rot: {Rotation} lock:{Locked}");
+        if (unlockable.canBeStored)
+        {
+            OnStoredConfigOnSettingChanged();
+            StoredConfig.SettingChanged += (_, _) => OnStoredConfigOnSettingChanged();
+        }
+
+        FurnitureLock.Log.LogDebug($"{unlockable.unlockableName} pos: {Position} rot: {Rotation} lock:{Locked} stored:{Stored}");
         return;
 
         void OnPositionConfigOnSettingChanged()
@@ -100,6 +115,12 @@ public class UnlockableConfig
         {
             Locked = LockedConfig.Value;
         }
+        
+
+        void OnStoredConfigOnSettingChanged()
+        {
+            Stored = StoredConfig.Value;
+        }
     }
 
     private void FindDefaults()
@@ -114,7 +135,7 @@ public class UnlockableConfig
             PlaceableShipObject[] objectsOfType = UnityEngine.Object.FindObjectsOfType<PlaceableShipObject>();
             for (int index = 0; index < objectsOfType.Length; ++index)
             {
-                if (StartOfRound.Instance.unlockablesList.unlockables[objectsOfType[index].unlockableID] == unlockable)
+                if (objectsOfType[index].unlockableID == UnlockableID)
                     gameObject = objectsOfType[index].parentObject.gameObject;
             }
         }

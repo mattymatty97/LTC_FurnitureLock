@@ -17,20 +17,22 @@ internal class StartOfRoundPatch
             return;
         
         //Bind config
-        foreach (var unlockable in __instance.unlockablesList.unlockables)
+        for (var index = 0; index < __instance.unlockablesList.unlockables.Count; index++)
         {
+            var unlockable = __instance.unlockablesList.unlockables[index];
             //do not handle suits
             if (unlockable.unlockableType == 0)
                 continue;
-            
+
             if (!unlockable.IsPlaceable)
                 continue;
-            
+
             if (FurnitureLock.PluginConfig.UnlockableConfigs.ContainsKey(unlockable))
                 continue;
 
-            FurnitureLock.PluginConfig.UnlockableConfigs[unlockable] = new UnlockableConfig(unlockable);
+            FurnitureLock.PluginConfig.UnlockableConfigs[unlockable] = new UnlockableConfig(unlockable, index);
         }
+
         FurnitureLock.PluginConfig.CleanAndSave();
     }
 
@@ -58,35 +60,61 @@ internal class StartOfRoundPatch
         }
     }
 
-
-    [HarmonyPrefix]
-    [HarmonyPatch(nameof(StartOfRound.SpawnUnlockable))]
+    
+    [HarmonyPatch(typeof(StartOfRound), nameof(StartOfRound.SpawnUnlockable))]
     [HarmonyPriority(Priority.Last)]
-    private static void OnUnlockableSpawn(StartOfRound __instance, int unlockableIndex)
+    internal static class SpawnUnlockablePatch
     {
-        if (!__instance.IsServer)
-            return;
+        private static void Prefix(StartOfRound __instance, bool __state, int unlockableIndex)
+        {
+            if (!__instance.IsServer)
+                return;
         
-        var unlockable = __instance.unlockablesList.unlockables[unlockableIndex];
+            var unlockable = __instance.unlockablesList.unlockables[unlockableIndex];
         
-        if (!FurnitureLock.PluginConfig.UnlockableConfigs.TryGetValue(unlockable, out var config))
-            return;
+            if (!FurnitureLock.PluginConfig.UnlockableConfigs.TryGetValue(unlockable, out var config))
+                return;
         
-        var gameNetworkManager = GameNetworkManager.Instance;
+            var gameNetworkManager = GameNetworkManager.Instance;
 
-        //if we're not locked use stored locations
-        if (ES3.KeyExists("ShipUnlockMoved_" + unlockable.unlockableName, gameNetworkManager.currentSaveFileName)
-            && !config.Locked)
-            return;
-        
-        if (!config.Locked)
-            return;
-        
-        FurnitureLock.Log.LogDebug($"{unlockable.unlockableName} forced to pos:{config.Position} rot:{config.Rotation}");
+            //if we're not locked use stored locations
+            if (ES3.KeyExists("ShipUnlockMoved_" + unlockable.unlockableName, gameNetworkManager.currentSaveFileName))
+            {
+                __state = true;
+                if (!config.Locked)
+                    return;
+            }
 
-        ES3.Save<bool>("ShipUnlockMoved_" + unlockable.unlockableName, true, gameNetworkManager.currentSaveFileName);
-        ES3.Save<Vector3>("ShipUnlockPos_" + unlockable.unlockableName, config.Position, gameNetworkManager.currentSaveFileName);
-        ES3.Save<Vector3>("ShipUnlockRot_" + unlockable.unlockableName, config.Rotation, gameNetworkManager.currentSaveFileName);
+            if (!config.Locked)
+                return;
+        
+            FurnitureLock.Log.LogDebug($"{unlockable.unlockableName} forced to pos:{config.Position} rot:{config.Rotation}");
+
+            ES3.Save<bool>("ShipUnlockMoved_" + unlockable.unlockableName, true, gameNetworkManager.currentSaveFileName);
+            ES3.Save<Vector3>("ShipUnlockPos_" + unlockable.unlockableName, config.Position, gameNetworkManager.currentSaveFileName);
+            ES3.Save<Vector3>("ShipUnlockRot_" + unlockable.unlockableName, config.Rotation, gameNetworkManager.currentSaveFileName);
       
+        }
+
+        private static void Postfix(StartOfRound __instance, bool __state, int unlockableIndex)
+        {
+            //run only if it's the first time it spawns
+            if (__state)
+                return;
+            
+            var unlockable = __instance.unlockablesList.unlockables[unlockableIndex];
+        
+            if (!FurnitureLock.PluginConfig.UnlockableConfigs.TryGetValue(unlockable, out var config))
+                return;
+            
+            if (!config.Stored)
+                return;
+            
+            if (__instance.SpawnedShipUnlockables.TryGetValue(unlockableIndex, out var gameObject))
+            {
+                ShipBuildModeManager.Instance.StoreObjectServerRpc(gameObject, -1);
+            }
+        }
     }
+    
 }
