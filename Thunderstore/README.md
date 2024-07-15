@@ -26,6 +26,8 @@ FurnitureLock
 - ### config change
   - all changes will apply immediately ( no restart required )
 
+## Icon By: [Starlancer](<https://thunderstore.io/c/lethal-company/p/AudioKnight/>)
+
 Installation
 ------------
 
