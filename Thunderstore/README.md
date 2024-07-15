@@ -4,6 +4,13 @@ FurnitureLock
 [![GitHub Pre-Release](https://img.shields.io/github/v/release/mattymatty97/LTC_FurnitureLock?include_prereleases&display_name=release&logo=github&logoColor=white&label=preview)](https://github.com/mattymatty97/LTC_FurnitureLock/releases)  
 [![Thunderstore Downloads](https://img.shields.io/thunderstore/dt/mattymatty/FurnitureLock?style=flat&logo=thunderstore&logoColor=white&label=thunderstore)](https://thunderstore.io/c/lethal-company/p/mattymatty/FurnitureLock/)
 
+### Nail Furniture into place
+
+- set default position to any movable furniture piece
+- lock them into place ( prevent moving and/or storing )
+- LethalConfig integration for easily copying positions
+- Fully Server-Only, no client installation required
+
 Installation
 ------------
 
