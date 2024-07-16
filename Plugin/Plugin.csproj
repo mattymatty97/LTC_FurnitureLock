@@ -4,7 +4,7 @@
         <RootNamespace>FurnitureLock</RootNamespace>
         <AssemblyName>FurnitureLock</AssemblyName>
         <Product>FurnitureLock</Product>
-        <Version>1.2.2</Version>
+        <Version>1.2.3</Version>
         <TargetFramework>netstandard2.1</TargetFramework>
         <LangVersion>Latest</LangVersion>
         <Configurations>Release</Configurations>

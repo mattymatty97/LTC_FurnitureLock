@@ -1,3 +1,6 @@
+### v1.2.3
+- ignore furniture if in default values
+
 ### v1.2.2
 - make defaults actually apply when not locked
 

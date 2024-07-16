@@ -18,7 +18,7 @@ namespace FurnitureLock
     {
         public const string GUID = "mattymatty.FurnitureLock";
         public const string NAME = "FurnitureLock";
-        public const string VERSION = "1.2.2";
+        public const string VERSION = "1.2.3";
 
         internal static ManualLogSource Log;
         
