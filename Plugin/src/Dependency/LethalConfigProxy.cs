@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Globalization;
 using System.Runtime.CompilerServices;
 using BepInEx.Configuration;
 using LethalConfig;
@@ -25,7 +26,8 @@ namespace FurnitureLock.Dependency
         {
             LethalConfigManager.AddConfigItem(new TextInputFieldConfigItem(entry, new TextInputFieldOptions()
             {
-                RequiresRestart = requiresRestart
+                RequiresRestart = requiresRestart,
+                Name = GetPrettyConfigName(entry)
             }));
         }
         
@@ -34,7 +36,8 @@ namespace FurnitureLock.Dependency
         {
             LethalConfigManager.AddConfigItem(new BoolCheckBoxConfigItem(entry, new BoolCheckBoxOptions()
             {
-                RequiresRestart = requiresRestart
+                RequiresRestart = requiresRestart,
+                Name = GetPrettyConfigName(entry)
             }));
         }
         
@@ -43,7 +46,8 @@ namespace FurnitureLock.Dependency
         {
             LethalConfigManager.AddConfigItem(new FloatInputFieldConfigItem(entry, new FloatInputFieldOptions()
             {
-                RequiresRestart = requiresRestart
+                RequiresRestart = requiresRestart,
+                Name = GetPrettyConfigName(entry)
             }));
         }
         
@@ -52,7 +56,8 @@ namespace FurnitureLock.Dependency
         {
             LethalConfigManager.AddConfigItem(new IntInputFieldConfigItem(entry, new IntInputFieldOptions()
             {
-                RequiresRestart = requiresRestart
+                RequiresRestart = requiresRestart,
+                Name = GetPrettyConfigName(entry)
             }));
         }
         
@@ -61,6 +66,12 @@ namespace FurnitureLock.Dependency
         {
             LethalConfigManager.AddConfigItem(new GenericButtonConfigItem(
                 section, name, description, buttonText, () =>callback?.Invoke()));
+        }
+		
+		
+        private static string GetPrettyConfigName<T>(ConfigEntry<T> entry)
+        {
+            return CultureInfo.InvariantCulture.TextInfo.ToTitleCase(entry.Definition.Key.Replace("_", " "));
         }
         
     }

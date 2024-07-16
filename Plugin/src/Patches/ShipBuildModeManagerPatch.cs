@@ -71,6 +71,9 @@ internal class ShipBuildModeManagerPatch
         if (!config.Locked)
             return;
         
+        if (config.Position.Equals(default) || config.Rotation.Equals(default))
+            return;
+        
         FurnitureLock.Log.LogDebug($"{unlockable.unlockableName} forced to pos:{config.Position} rot:{config.Rotation}");
         newPosition = config.Position;
         newRotation = config.Rotation;

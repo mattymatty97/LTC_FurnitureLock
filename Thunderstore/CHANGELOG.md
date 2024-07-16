@@ -1,3 +1,6 @@
+### v1.2.2
+- make defaults actually apply when not locked
+
 ### v1.2.1
 - added Apply button to move furniture to config values
 

@@ -1,6 +1,7 @@
 ﻿using System;
 using FurnitureLock.Config;
 using HarmonyLib;
+using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Pool;
 
@@ -108,8 +109,8 @@ internal class StartOfRoundPatch
                 if (!config.Locked)
                     return;
             }
-
-            if (!config.Locked)
+            
+            if (config.Position.Equals(default) || config.Rotation.Equals(default))
                 return;
         
             FurnitureLock.Log.LogDebug($"{unlockable.unlockableName} forced to pos:{config.Position} rot:{config.Rotation}");
@@ -139,6 +140,22 @@ internal class StartOfRoundPatch
                 ShipBuildModeManager.Instance.StoreObjectServerRpc(gameObject, -1);
             }
         }
+    }
+
+    [HarmonyPostfix]
+    [HarmonyPatch(nameof(StartOfRound.EndPlayersFiredSequenceClientRpc))]
+    private static void AfterEject(StartOfRound __instance)
+    {
+        var networkManager = __instance.NetworkManager;
+        if (networkManager == null || !networkManager.IsListening)
+            return;
+        if (__instance.__rpc_exec_stage != NetworkBehaviour.__RpcExecStage.Client || !networkManager.IsClient && !networkManager.IsHost)
+            return;
+        
+        if (!__instance.IsServer)
+            return;
+        
+        __instance.LoadUnlockables();
     }
     
 }
