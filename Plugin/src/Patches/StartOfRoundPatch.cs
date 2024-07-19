@@ -110,7 +110,7 @@ internal class StartOfRoundPatch
                     return;
             }
             
-            if (config.Position.Equals(default) || config.Rotation.Equals(default))
+            if (!config.IsValid)
                 return;
         
             FurnitureLock.Log.LogDebug($"{unlockable.unlockableName} forced to pos:{config.Position} rot:{config.Rotation}");
@@ -154,8 +154,26 @@ internal class StartOfRoundPatch
         
         if (!__instance.IsServer)
             return;
-        
-        __instance.LoadUnlockables();
+
+        foreach (var unlockable in __instance.unlockablesList.unlockables)
+        {
+            if (unlockable.unlockableType == 0)
+                continue;
+
+            if (!unlockable.IsPlaceable)
+                continue;
+
+            if (!unlockable.alreadyUnlocked && !unlockable.hasBeenUnlockedByPlayer && !(unlockable.unlockedInChallengeFile && __instance.isChallengeFile))
+                return;
+            
+            if (!FurnitureLock.PluginConfig.UnlockableConfigs.TryGetValue(unlockable, out var config))
+                continue;
+            
+            if (!config.IsValid)
+                return;
+            
+            config.ApplyValues();
+        }
     }
     
 }

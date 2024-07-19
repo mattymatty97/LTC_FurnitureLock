@@ -10,6 +10,8 @@ namespace FurnitureLock.Config;
 
 public class UnlockableConfig
 {
+    public bool IsValid => !(Unlockable.placedPosition.Equals(default) || Unlockable.placedRotation.Equals(default));
+    
     public UnlockableItem Unlockable { get; }
     public int UnlockableID { get; }
     public Vector3 Position { get; set; }
@@ -38,7 +40,8 @@ public class UnlockableConfig
         LockedConfig = config.Bind(strippedName, "locked", false, "if true the furniture piece will not be movable");
         if (unlockable.canBeStored)
             StoredConfig = config.Bind(strippedName, "spawn_stored", false, "if true the furniture piece will be stored immediately upon spawn");
-        
+       
+
         if (LethalConfigProxy.Enabled)
         {
             LethalConfigProxy.AddConfig(PositionConfig);
@@ -46,34 +49,14 @@ public class UnlockableConfig
             LethalConfigProxy.AddConfig(LockedConfig);
             if (unlockable.canBeStored)
                 LethalConfigProxy.AddConfig(StoredConfig);
+
             LethalConfigProxy.AddButton(strippedName, "Set Values", "copy current position and rotation to config", "Copy",
-                () =>
-                {
-                    if (unlockable.placedPosition.Equals(default) || unlockable.placedRotation.Equals(default))
-                    {
-                        FurnitureLock.Log.LogError($"{unlockable.unlockableName} Cannot copy values from default or missing furniture");
-                        return;
-                    }
-                    var pos = unlockable.placedPosition;
-                    PositionConfig.Value = $"{pos.x.ToString(CultureInfo.InvariantCulture)}, {pos.y.ToString(CultureInfo.InvariantCulture)}, {pos.z.ToString(CultureInfo.InvariantCulture)}";
-                    var rot = unlockable.placedRotation;
-                    RotationConfig.Value = $"{rot.x.ToString(CultureInfo.InvariantCulture)}, {rot.y.ToString(CultureInfo.InvariantCulture)}, {rot.z.ToString(CultureInfo.InvariantCulture)}";
-                    FurnitureLock.PluginConfig.CleanAndSave();
-                });
+                CopyValues);
+
+            
+
             LethalConfigProxy.AddButton(strippedName, "Apply values", "apply current config values", "Apply",
-                () =>
-                {
-                    if (Position.Equals(default) || Rotation.Equals(default))
-                    {
-                        FurnitureLock.Log.LogError($"{unlockable.unlockableName} Cannot apply default values");
-                        return;
-                    }
-                    if (StartOfRound.Instance != null &&
-                        StartOfRound.Instance.SpawnedShipUnlockables.TryGetValue(UnlockableID, out var gameObject))
-                    {
-                        ShipBuildModeManager.Instance.PlaceShipObjectServerRpc(Position, Rotation, gameObject, -1);
-                    }
-                });
+                ApplyValues);
         }
 
         OnPositionConfigOnSettingChanged();
@@ -94,52 +77,83 @@ public class UnlockableConfig
         FurnitureLock.Log.LogDebug($"{unlockable.unlockableName} pos: {Position} rot: {Rotation} lock:{Locked} stored:{Stored}");
         return;
 
-        void OnPositionConfigOnSettingChanged()
+        
+    }
+    
+    internal void CopyValues()
+    {
+        if (Unlockable.placedPosition.Equals(default) || Unlockable.placedRotation.Equals(default))
         {
-            try
-            {
-                var sections = PositionConfig.Value.Split(',');
-
-                var posArray = sections.Select(s => float.Parse(s, CultureInfo.InvariantCulture)).ToArray();
-
-                var newPos = new Vector3(posArray[0], posArray[1], posArray[2]);
-
-                Position = newPos;
-            }
-            catch (Exception)
-            {
-                Position = default;
-            }
+            FurnitureLock.Log.LogError($"{Unlockable.unlockableName} Cannot copy values from default or missing furniture");
+            return;
         }
 
-        void OnRotationConfigOnSettingChanged()
+        var pos = Unlockable.placedPosition;
+        PositionConfig.Value = $"{pos.x.ToString(CultureInfo.InvariantCulture)}, {pos.y.ToString(CultureInfo.InvariantCulture)}, {pos.z.ToString(CultureInfo.InvariantCulture)}";
+        var rot = Unlockable.placedRotation;
+        RotationConfig.Value = $"{rot.x.ToString(CultureInfo.InvariantCulture)}, {rot.y.ToString(CultureInfo.InvariantCulture)}, {rot.z.ToString(CultureInfo.InvariantCulture)}";
+        FurnitureLock.PluginConfig.CleanAndSave();
+    }
+    
+    internal void ApplyValues()
+    {
+        if (Position.Equals(default) || Rotation.Equals(default))
         {
-            try
-            {
-                var sections = RotationConfig.Value.Split(',');
-
-                var posArray = sections.Select(s => float.Parse(s, CultureInfo.InvariantCulture)).ToArray();
-
-                var newRot = new Vector3(posArray[0], posArray[1], posArray[2]);
-
-                Rotation = newRot;
-            }
-            catch (Exception)
-            {
-                Rotation = default;
-            }
+            FurnitureLock.Log.LogError($"{Unlockable.unlockableName} Cannot apply default values");
+            return;
         }
 
-        void OnLockedConfigOnSettingChanged()
+        if (StartOfRound.Instance != null && StartOfRound.Instance.SpawnedShipUnlockables.TryGetValue(UnlockableID, out var gameObject))
         {
-            Locked = LockedConfig.Value;
+            ShipBuildModeManager.Instance.PlaceShipObjectServerRpc(Position, Rotation, gameObject, -1);
         }
+    }
+    
+    void OnPositionConfigOnSettingChanged()
+    {
+        try
+        {
+            var sections = PositionConfig.Value.Split(',');
+
+            var posArray = sections.Select(s => float.Parse(s, CultureInfo.InvariantCulture)).ToArray();
+
+            var newPos = new Vector3(posArray[0], posArray[1], posArray[2]);
+
+            Position = newPos;
+        }
+        catch (Exception)
+        {
+            Position = default;
+        }
+    }
+
+    private void OnRotationConfigOnSettingChanged()
+    {
+        try
+        {
+            var sections = RotationConfig.Value.Split(',');
+
+            var posArray = sections.Select(s => float.Parse(s, CultureInfo.InvariantCulture)).ToArray();
+
+            var newRot = new Vector3(posArray[0], posArray[1], posArray[2]);
+
+            Rotation = newRot;
+        }
+        catch (Exception)
+        {
+            Rotation = default;
+        }
+    }
+
+    private void OnLockedConfigOnSettingChanged()
+    {
+        Locked = LockedConfig.Value;
+    }
         
 
-        void OnStoredConfigOnSettingChanged()
-        {
-            Stored = StoredConfig.Value;
-        }
+    private void OnStoredConfigOnSettingChanged()
+    {
+        Stored = StoredConfig.Value;
     }
 
 }
