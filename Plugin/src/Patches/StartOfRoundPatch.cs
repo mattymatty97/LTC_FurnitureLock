@@ -169,15 +169,16 @@ internal class StartOfRoundPatch
             if (!unlockable.IsPlaceable)
                 continue;
 
-            if (!unlockable.alreadyUnlocked && !unlockable.hasBeenUnlockedByPlayer && !(unlockable.unlockedInChallengeFile && __instance.isChallengeFile))
-                return;
+            if (!unlockable.alreadyUnlocked && !unlockable.hasBeenUnlockedByPlayer &&
+                (!unlockable.unlockedInChallengeFile || !__instance.isChallengeFile))
+                continue;
             
             if (!FurnitureLock.PluginConfig.UnlockableConfigs.TryGetValue(unlockable, out var config))
                 continue;
-            
+
             if (!config.IsValid)
-                return;
-            
+                continue;
+
             config.ApplyValues();
         }
     }

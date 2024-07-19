@@ -1,3 +1,6 @@
+### v1.2.6
+- fixed more typos :/
+
 ### v1.2.5
 - fix typo preventing stuff from working
 
