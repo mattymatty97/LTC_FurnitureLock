@@ -10,8 +10,7 @@ namespace FurnitureLock.Config;
 
 public class UnlockableConfig
 {
-    public bool IsValid => !(Unlockable.placedPosition.Equals(default) || Unlockable.placedRotation.Equals(default));
-    
+    public bool IsValid => !(Position.Equals(default) || Rotation.Equals(default));
     public UnlockableItem Unlockable { get; }
     public int UnlockableID { get; }
     public Vector3 Position { get; set; }
@@ -75,8 +74,6 @@ public class UnlockableConfig
         }
 
         FurnitureLock.Log.LogDebug($"{unlockable.unlockableName} pos: {Position} rot: {Rotation} lock:{Locked} stored:{Stored}");
-        return;
-
         
     }
     

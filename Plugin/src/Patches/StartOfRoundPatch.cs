@@ -106,14 +106,20 @@ internal class StartOfRoundPatch
             if (ES3.KeyExists("ShipUnlockMoved_" + unlockable.unlockableName, gameNetworkManager.currentSaveFileName))
             {
                 __state = true;
+                
+                FurnitureLock.Log.LogDebug($"{unlockable.unlockableName} was moved locked {config.Locked}");
+
                 if (!config.Locked)
                     return;
-            }
+            } 
+            
+            FurnitureLock.Log.LogDebug($"{unlockable.unlockableName} valid:{config.IsValid}");
+
             
             if (!config.IsValid)
                 return;
         
-            FurnitureLock.Log.LogDebug($"{unlockable.unlockableName} forced to pos:{config.Position} rot:{config.Rotation}");
+            FurnitureLock.Log.LogDebug($"{unlockable.unlockableName} defaulted to pos:{config.Position} rot:{config.Rotation}");
 
             ES3.Save<bool>("ShipUnlockMoved_" + unlockable.unlockableName, true, gameNetworkManager.currentSaveFileName);
             ES3.Save<Vector3>("ShipUnlockPos_" + unlockable.unlockableName, config.Position, gameNetworkManager.currentSaveFileName);

@@ -1,3 +1,6 @@
+### v1.2.5
+- fix typo preventing stuff from working
+- 
 ### v1.2.4
 - reapply values after firing sequence
 
