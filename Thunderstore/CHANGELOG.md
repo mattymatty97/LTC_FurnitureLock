@@ -1,4 +1,7 @@
 ### v1.2.6
+- apply "Stored" config to Eject too
+
+### v1.2.6
 - fixed more typos :/
 
 ### v1.2.5

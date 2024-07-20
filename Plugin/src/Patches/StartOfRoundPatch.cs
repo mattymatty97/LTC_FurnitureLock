@@ -163,23 +163,34 @@ internal class StartOfRoundPatch
 
         foreach (var unlockable in __instance.unlockablesList.unlockables)
         {
-            if (unlockable.unlockableType == 0)
-                continue;
+            try
+            {
+                if (unlockable.unlockableType == 0)
+                    continue;
 
-            if (!unlockable.IsPlaceable)
-                continue;
+                if (!unlockable.IsPlaceable)
+                    continue;
 
-            if (!unlockable.alreadyUnlocked && !unlockable.hasBeenUnlockedByPlayer &&
-                (!unlockable.unlockedInChallengeFile || !__instance.isChallengeFile))
-                continue;
-            
-            if (!FurnitureLock.PluginConfig.UnlockableConfigs.TryGetValue(unlockable, out var config))
-                continue;
+                if (!unlockable.alreadyUnlocked && !unlockable.hasBeenUnlockedByPlayer &&
+                    (!unlockable.unlockedInChallengeFile || !__instance.isChallengeFile))
+                    continue;
 
-            if (!config.IsValid)
-                continue;
+                if (!FurnitureLock.PluginConfig.UnlockableConfigs.TryGetValue(unlockable, out var config))
+                    continue;
 
-            config.ApplyValues();
+                if (config.Stored &&
+                    __instance.SpawnedShipUnlockables.TryGetValue(config.UnlockableID, out var gameObject))
+                    ShipBuildModeManager.Instance.StoreObjectServerRpc(gameObject, -1);
+
+                if (!config.IsValid)
+                    continue;
+
+                config.ApplyValues();
+            }
+            catch (Exception ex)
+            {
+                FurnitureLock.Log.LogError($"Error resetting {unlockable.unlockableName}:\n{ex}");
+            }
         }
     }
     
