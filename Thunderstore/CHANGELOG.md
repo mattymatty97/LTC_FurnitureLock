@@ -1,3 +1,6 @@
+### v1.2.8
+- attempt at correctly sync new unlocked furniture
+
 ### v1.2.6
 - apply "Stored" config to Eject too
 

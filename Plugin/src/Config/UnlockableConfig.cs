@@ -10,13 +10,20 @@ namespace FurnitureLock.Config;
 
 public class UnlockableConfig
 {
+    private bool _stored;
     public bool IsValid => !(Position.Equals(default) || Rotation.Equals(default));
     public UnlockableItem Unlockable { get; }
     public int UnlockableID { get; }
-    public Vector3 Position { get; set; }
-    public Vector3 Rotation { get; set; }
-    public bool Locked { get; set; }
-    public bool Stored { get; set; }
+    public Vector3 Position { get; private set; }
+    public Vector3 Rotation { get; private set; }
+    public bool Locked { get; private set; }
+
+    public bool Stored
+    {
+        get => _stored && !Locked;
+        private set => _stored = value;
+    }
+
     internal ConfigEntry<string> PositionConfig { get; private set; }
     internal ConfigEntry<string> RotationConfig { get; private set; }
     internal ConfigEntry<bool> LockedConfig { get; private set; }
@@ -94,19 +101,32 @@ public class UnlockableConfig
     
     internal void ApplyValues()
     {
-        if (Position.Equals(default) || Rotation.Equals(default))
+        
+        if (!IsValid)
         {
             FurnitureLock.Log.LogError($"{Unlockable.unlockableName} Cannot apply default values");
             return;
         }
 
-        if (StartOfRound.Instance != null && StartOfRound.Instance.SpawnedShipUnlockables.TryGetValue(UnlockableID, out var gameObject))
+        var startOfRound = StartOfRound.Instance;
+        if (startOfRound == null)
+            return;
+        
+        if(!startOfRound.IsServer)
         {
-            ShipBuildModeManager.Instance.PlaceShipObjectServerRpc(Position, Rotation, gameObject, -1);
+            FurnitureLock.Log.LogError($"{Unlockable.unlockableName} Only the Host can apply values!");
+            return;
         }
+
+        if (!StartOfRound.Instance.SpawnedShipUnlockables.TryGetValue(UnlockableID, out var gameObject)) 
+            return;
+        
+        var placeableShipObject = gameObject.GetComponentInChildren<PlaceableShipObject>();
+        ShipBuildModeManager.Instance.PlaceShipObject(Position, Rotation, placeableShipObject);
+        ShipBuildModeManager.Instance.PlaceShipObjectServerRpc(Position, Rotation, gameObject, (int)GameNetworkManager.Instance.localPlayerController.playerClientId);
     }
-    
-    void OnPositionConfigOnSettingChanged()
+
+    private void OnPositionConfigOnSettingChanged()
     {
         try
         {
