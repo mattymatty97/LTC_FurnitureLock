@@ -1,3 +1,6 @@
+### v1.2.9
+- wa
+
 ### v1.2.8
 - attempt at correctly sync new unlocked furniture
 

@@ -118,12 +118,22 @@ public class UnlockableConfig
             return;
         }
 
-        if (!StartOfRound.Instance.SpawnedShipUnlockables.TryGetValue(UnlockableID, out var gameObject)) 
-            return;
+        if (!StartOfRound.Instance.SpawnedShipUnlockables.TryGetValue(UnlockableID, out var gameObject))
+        {
+            PlaceableShipObject[] objectsOfType = UnityEngine.Object.FindObjectsOfType<PlaceableShipObject>();
+            for (int index = 0; index < objectsOfType.Length; ++index)
+            {
+                if (objectsOfType[index].unlockableID == UnlockableID)
+                    gameObject = objectsOfType[index].parentObject.gameObject;
+            }
+            if (gameObject == null)
+                return;
+        }
         
         var placeableShipObject = gameObject.GetComponentInChildren<PlaceableShipObject>();
         ShipBuildModeManager.Instance.PlaceShipObject(Position, Rotation, placeableShipObject);
-        ShipBuildModeManager.Instance.PlaceShipObjectServerRpc(Position, Rotation, gameObject, (int)GameNetworkManager.Instance.localPlayerController.playerClientId);
+        if (GameNetworkManager.Instance.localPlayerController != null)
+            ShipBuildModeManager.Instance.PlaceShipObjectServerRpc(Position, Rotation, gameObject, (int)GameNetworkManager.Instance.localPlayerController.playerClientId);
     }
 
     private void OnPositionConfigOnSettingChanged()

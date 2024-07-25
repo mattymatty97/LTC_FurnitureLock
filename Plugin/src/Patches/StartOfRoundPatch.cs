@@ -51,10 +51,7 @@ internal class StartOfRoundPatch
         if (!__instance.IsServer)
             return;
 
-        if (!ES3.KeyExists("UnlockedShipObjects", GameNetworkManager.Instance.currentSaveFileName))
-        {
-            ApplyDefaults(__instance, true);
-        }
+        ApplyDefaults(__instance, true);
     }
 
     [HarmonyPostfix]
@@ -135,9 +132,20 @@ internal class StartOfRoundPatch
 
                 if (!FurnitureLock.PluginConfig.UnlockableConfigs.TryGetValue(unlockable, out var config))
                     continue;
+                
+                if (!StartOfRound.Instance.SpawnedShipUnlockables.TryGetValue(config.UnlockableID, out var gameObject))
+                {
+                    PlaceableShipObject[] objectsOfType = UnityEngine.Object.FindObjectsOfType<PlaceableShipObject>();
+                    for (int index = 0; index < objectsOfType.Length; ++index)
+                    {
+                        if (objectsOfType[index].unlockableID == config.UnlockableID)
+                            gameObject = objectsOfType[index].parentObject.gameObject;
+                    }
+                    if (gameObject == null)
+                        return;
+                }
 
-                if (config.Stored &&
-                    startOfRound.SpawnedShipUnlockables.TryGetValue(config.UnlockableID, out var gameObject))
+                if (config.Stored)
                     ShipBuildModeManager.Instance.StoreObjectServerRpc(gameObject, -1);
 
                 if (!config.IsValid)
@@ -147,7 +155,7 @@ internal class StartOfRoundPatch
             }
             catch (Exception ex)
             {
-                FurnitureLock.Log.LogError($"Error resetting {unlockable.unlockableName}:\n{ex}");
+                FurnitureLock.Log.LogError($"Error defaulting {unlockable.unlockableName}:\n{ex}");
             }
         }
     }
