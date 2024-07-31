@@ -2,6 +2,8 @@
 using FurnitureLock.Config;
 using HarmonyLib;
 using Unity.Netcode;
+using UnityEngine;
+using Object = UnityEngine.Object;
 
 namespace FurnitureLock.Patches;
 
@@ -79,19 +81,8 @@ internal class StartOfRoundPatch
             if (!config.Locked)
                 return;
         }
-        else if (config.Stored)
-        {
-            ShipBuildModeManager.Instance.StoreObjectServerRpc(gameObject, -1);
-        }
-
-        FurnitureLock.Log.LogDebug($"{unlockable.unlockableName} valid:{config.IsValid}");
         
-        if (!config.IsValid)
-            return;
-    
-        FurnitureLock.Log.LogDebug($"{unlockable.unlockableName} defaulted to pos:{config.Position} rot:{config.Rotation}");
-
-        config.ApplyValues();
+        config.ApplyValues(gameObject);
     }
 
     [HarmonyPostfix]
@@ -107,15 +98,19 @@ internal class StartOfRoundPatch
         if (!__instance.IsServer)
             return;
 
-        ApplyDefaults(__instance);
+        ApplyDefaults(__instance,false);
     }
 
-    private static void ApplyDefaults(StartOfRound startOfRound, bool skipMoved=false)
+    private static void ApplyDefaults(StartOfRound startOfRound, bool skipMoved)
     {
-        foreach (var unlockable in startOfRound.unlockablesList.unlockables)
+        var placeableShipObjects = Object.FindObjectsOfType<PlaceableShipObject>();
+        foreach (var shipObject in placeableShipObjects)
         {
+            var unlockable = startOfRound.unlockablesList.unlockables[shipObject.unlockableID];
             try
             {
+                var gameObject = shipObject.parentObject.gameObject;
+                
                 if (unlockable.unlockableType == 0)
                     continue;
 
@@ -124,34 +119,11 @@ internal class StartOfRoundPatch
 
                 if (skipMoved && unlockable.hasBeenMoved)
                     continue;
-                
-                if (!unlockable.alreadyUnlocked && 
-                    !unlockable.hasBeenUnlockedByPlayer && 
-                    (!unlockable.unlockedInChallengeFile || !startOfRound.isChallengeFile))
-                    continue;
 
                 if (!FurnitureLock.PluginConfig.UnlockableConfigs.TryGetValue(unlockable, out var config))
                     continue;
-                
-                if (!StartOfRound.Instance.SpawnedShipUnlockables.TryGetValue(config.UnlockableID, out var gameObject))
-                {
-                    PlaceableShipObject[] objectsOfType = UnityEngine.Object.FindObjectsOfType<PlaceableShipObject>();
-                    for (int index = 0; index < objectsOfType.Length; ++index)
-                    {
-                        if (objectsOfType[index].unlockableID == config.UnlockableID)
-                            gameObject = objectsOfType[index].parentObject.gameObject;
-                    }
-                    if (gameObject == null)
-                        return;
-                }
 
-                if (config.Stored)
-                    ShipBuildModeManager.Instance.StoreObjectServerRpc(gameObject, -1);
-
-                if (!config.IsValid)
-                    continue;
-
-                config.ApplyValues();
+                config.ApplyValues(gameObject);
             }
             catch (Exception ex)
             {

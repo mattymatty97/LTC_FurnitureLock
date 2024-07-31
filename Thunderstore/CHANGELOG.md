@@ -1,3 +1,7 @@
+### v1.3.0
+- correctly reset furniture on Eject
+- allow to return to apply vanilla "default" where possible
+
 ### v1.2.9
 - wa
 

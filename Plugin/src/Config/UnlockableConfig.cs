@@ -10,12 +10,40 @@ namespace FurnitureLock.Config;
 
 public class UnlockableConfig
 {
+    public bool DefaultsInitialized { get; internal set; }
     private bool _stored;
-    public bool IsValid => !(Position.Equals(default) || Rotation.Equals(default));
+    private Vector3? _position;
+    private Vector3? _rotation;
+
+    public bool IsValid
+    {
+        get
+        {
+            if (!_position.HasValue && !DefaultsInitialized)
+                return false;
+            if (!_rotation.HasValue && !DefaultsInitialized)
+                return false;
+            return true;
+        }
+    }
+
     public UnlockableItem Unlockable { get; }
     public int UnlockableID { get; }
-    public Vector3 Position { get; private set; }
-    public Vector3 Rotation { get; private set; }
+
+    public Vector3 Position
+    {
+        get => _position ?? DefaultPosition;
+        private set => _position = value;
+    }
+
+    public Vector3 Rotation
+    {
+        get => _rotation ?? DefaultRotation;
+        private set => _rotation = value;
+    }
+
+    public Vector3 DefaultPosition { get; internal set; }
+    public Vector3 DefaultRotation { get; internal set; }
     public bool Locked { get; private set; }
 
     public bool Stored
@@ -41,8 +69,8 @@ public class UnlockableConfig
 
         var config = FurnitureLock.INSTANCE.Config;
 
-        PositionConfig = config.Bind(strippedName, "position", "not set", "default position of the Furniture piece.");
-        RotationConfig = config.Bind(strippedName, "rotation", "not set", "default rotation of the Furniture piece.");
+        PositionConfig = config.Bind(strippedName, "position", "default", "default position of the Furniture piece.");
+        RotationConfig = config.Bind(strippedName, "rotation", "default", "default rotation of the Furniture piece.");
         LockedConfig = config.Bind(strippedName, "locked", false, "if true the furniture piece will not be movable");
         if (unlockable.canBeStored)
             StoredConfig = config.Bind(strippedName, "spawn_stored", false, "if true the furniture piece will be stored immediately upon spawn");
@@ -62,7 +90,7 @@ public class UnlockableConfig
             
 
             LethalConfigProxy.AddButton(strippedName, "Apply values", "apply current config values", "Apply",
-                ApplyValues);
+                ()=>ApplyValues());
         }
 
         OnPositionConfigOnSettingChanged();
@@ -99,15 +127,8 @@ public class UnlockableConfig
         FurnitureLock.PluginConfig.CleanAndSave();
     }
     
-    internal void ApplyValues()
+    internal void ApplyValues(GameObject gameObject = null)
     {
-        
-        if (!IsValid)
-        {
-            FurnitureLock.Log.LogError($"{Unlockable.unlockableName} Cannot apply default values");
-            return;
-        }
-
         var startOfRound = StartOfRound.Instance;
         if (startOfRound == null)
             return;
@@ -118,22 +139,40 @@ public class UnlockableConfig
             return;
         }
 
-        if (!StartOfRound.Instance.SpawnedShipUnlockables.TryGetValue(UnlockableID, out var gameObject))
+        if (!gameObject && !StartOfRound.Instance.SpawnedShipUnlockables.TryGetValue(UnlockableID, out gameObject))
         {
-            PlaceableShipObject[] objectsOfType = UnityEngine.Object.FindObjectsOfType<PlaceableShipObject>();
-            for (int index = 0; index < objectsOfType.Length; ++index)
+            var placeableShipObjects = UnityEngine.Object.FindObjectsOfType<PlaceableShipObject>();
+            foreach (var shipObject in placeableShipObjects)
             {
-                if (objectsOfType[index].unlockableID == UnlockableID)
-                    gameObject = objectsOfType[index].parentObject.gameObject;
+                if (shipObject.unlockableID == UnlockableID)
+                    gameObject = shipObject.parentObject.gameObject;
             }
             if (gameObject == null)
                 return;
         }
-        
+
+        if (!Stored && Unlockable.inStorage)
+        {
+            startOfRound.ReturnUnlockableFromStorageServerRpc(UnlockableID);
+            FurnitureLock.Log.LogDebug($"{Unlockable.unlockableName} Forced out of storage");
+        }
+
         var placeableShipObject = gameObject.GetComponentInChildren<PlaceableShipObject>();
-        ShipBuildModeManager.Instance.PlaceShipObject(Position, Rotation, placeableShipObject);
-        if (GameNetworkManager.Instance.localPlayerController != null)
-            ShipBuildModeManager.Instance.PlaceShipObjectServerRpc(Position, Rotation, gameObject, (int)GameNetworkManager.Instance.localPlayerController.playerClientId);
+        if (IsValid)
+        {
+            ShipBuildModeManager.Instance.PlaceShipObject(Position, Rotation, placeableShipObject);
+            if (GameNetworkManager.Instance.localPlayerController != null)
+                ShipBuildModeManager.Instance.PlaceShipObjectServerRpc(Position, Rotation, gameObject,
+                    (int)GameNetworkManager.Instance.localPlayerController.playerClientId);
+            
+            FurnitureLock.Log.LogDebug($"{Unlockable.unlockableName} moved to pos:{Position} rot:{Rotation}");
+        }
+
+        if (Stored && !Unlockable.inStorage)
+        {
+            ShipBuildModeManager.Instance.StoreObjectServerRpc(gameObject, -1);
+            FurnitureLock.Log.LogDebug($"{Unlockable.unlockableName} Forced in storage");
+        }
     }
 
     private void OnPositionConfigOnSettingChanged()
@@ -146,11 +185,11 @@ public class UnlockableConfig
 
             var newPos = new Vector3(posArray[0], posArray[1], posArray[2]);
 
-            Position = newPos;
+            _position = newPos;
         }
         catch (Exception)
         {
-            Position = default;
+            _position = null;
         }
     }
 
@@ -164,11 +203,11 @@ public class UnlockableConfig
 
             var newRot = new Vector3(posArray[0], posArray[1], posArray[2]);
 
-            Rotation = newRot;
+            _rotation = newRot;
         }
         catch (Exception)
         {
-            Rotation = default;
+            _rotation = null;
         }
     }
 
@@ -183,4 +222,8 @@ public class UnlockableConfig
         Stored = StoredConfig.Value;
     }
 
+    public override string ToString()
+    {
+        return $"{Unlockable.unlockableName}({UnlockableID})";
+    }
 }
