@@ -82,7 +82,7 @@ internal class StartOfRoundPatch
                 return;
         }
         
-        config.ApplyValues(gameObject);
+        config.ApplyValues(gameObject, false);
     }
 
     [HarmonyPostfix]
@@ -123,7 +123,7 @@ internal class StartOfRoundPatch
                 if (!FurnitureLock.PluginConfig.UnlockableConfigs.TryGetValue(unlockable, out var config))
                     continue;
 
-                config.ApplyValues(gameObject);
+                config.ApplyValues(gameObject, false);
             }
             catch (Exception ex)
             {

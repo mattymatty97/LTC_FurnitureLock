@@ -1,3 +1,9 @@
+### v1.3.1
+- gracefully handle some errors
+
+### v1.3.2
+- do not make sounds when moving items during lobby creation
+
 ### v1.3.0
 - correctly reset furniture on Eject
 - allow to return to apply vanilla "default" where possible

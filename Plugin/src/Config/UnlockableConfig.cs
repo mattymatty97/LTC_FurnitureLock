@@ -127,51 +127,59 @@ public class UnlockableConfig
         FurnitureLock.PluginConfig.CleanAndSave();
     }
     
-    internal void ApplyValues(GameObject gameObject = null)
+    internal void ApplyValues(GameObject gameObject = null, bool placementSound = true)
     {
-        var startOfRound = StartOfRound.Instance;
-        if (startOfRound == null)
-            return;
-        
-        if(!startOfRound.IsServer)
+        try
         {
-            FurnitureLock.Log.LogError($"{Unlockable.unlockableName} Only the Host can apply values!");
-            return;
-        }
-
-        if (!gameObject && !StartOfRound.Instance.SpawnedShipUnlockables.TryGetValue(UnlockableID, out gameObject))
-        {
-            var placeableShipObjects = UnityEngine.Object.FindObjectsOfType<PlaceableShipObject>();
-            foreach (var shipObject in placeableShipObjects)
-            {
-                if (shipObject.unlockableID == UnlockableID)
-                    gameObject = shipObject.parentObject.gameObject;
-            }
-            if (gameObject == null)
+            var startOfRound = StartOfRound.Instance;
+            if (startOfRound == null)
                 return;
-        }
 
-        if (!Stored && Unlockable.inStorage)
-        {
-            startOfRound.ReturnUnlockableFromStorageServerRpc(UnlockableID);
-            FurnitureLock.Log.LogDebug($"{Unlockable.unlockableName} Forced out of storage");
-        }
+            if (!startOfRound.IsServer)
+            {
+                FurnitureLock.Log.LogError($"{Unlockable.unlockableName} Only the Host can apply values!");
+                return;
+            }
 
-        var placeableShipObject = gameObject.GetComponentInChildren<PlaceableShipObject>();
-        if (IsValid)
-        {
-            ShipBuildModeManager.Instance.PlaceShipObject(Position, Rotation, placeableShipObject);
-            if (GameNetworkManager.Instance.localPlayerController != null)
-                ShipBuildModeManager.Instance.PlaceShipObjectServerRpc(Position, Rotation, gameObject,
-                    (int)GameNetworkManager.Instance.localPlayerController.playerClientId);
-            
-            FurnitureLock.Log.LogDebug($"{Unlockable.unlockableName} moved to pos:{Position} rot:{Rotation}");
-        }
+            if (!gameObject && !StartOfRound.Instance.SpawnedShipUnlockables.TryGetValue(UnlockableID, out gameObject))
+            {
+                var placeableShipObjects = UnityEngine.Object.FindObjectsOfType<PlaceableShipObject>();
+                foreach (var shipObject in placeableShipObjects)
+                {
+                    if (shipObject.unlockableID == UnlockableID)
+                        gameObject = shipObject.parentObject.gameObject;
+                }
 
-        if (Stored && !Unlockable.inStorage)
+                if (gameObject == null)
+                    return;
+            }
+
+            if (!Stored && Unlockable.inStorage)
+            {
+                startOfRound.ReturnUnlockableFromStorageServerRpc(UnlockableID);
+                FurnitureLock.Log.LogDebug($"{Unlockable.unlockableName} Forced out of storage");
+            }
+
+            var placeableShipObject = gameObject.GetComponentInChildren<PlaceableShipObject>();
+            if (IsValid)
+            {
+                ShipBuildModeManager.Instance.PlaceShipObject(Position, Rotation, placeableShipObject, placementSound);
+                if (GameNetworkManager.Instance.localPlayerController != null)
+                    ShipBuildModeManager.Instance.PlaceShipObjectServerRpc(Position, Rotation, gameObject,
+                        (int)GameNetworkManager.Instance.localPlayerController.playerClientId);
+
+                FurnitureLock.Log.LogDebug($"{Unlockable.unlockableName} moved to pos:{Position} rot:{Rotation}");
+            }
+
+            if (Stored && !Unlockable.inStorage)
+            {
+                ShipBuildModeManager.Instance.StoreObjectServerRpc(gameObject, -1);
+                FurnitureLock.Log.LogDebug($"{Unlockable.unlockableName} Forced in storage");
+            }
+        }
+        catch (Exception ex)
         {
-            ShipBuildModeManager.Instance.StoreObjectServerRpc(gameObject, -1);
-            FurnitureLock.Log.LogDebug($"{Unlockable.unlockableName} Forced in storage");
+            FurnitureLock.Log.LogError($"{Unlockable.unlockableName} crashed while moving:\n{ex}");
         }
     }
 
