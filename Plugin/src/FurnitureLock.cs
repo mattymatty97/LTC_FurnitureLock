@@ -18,7 +18,7 @@ namespace FurnitureLock
     {
         public const string GUID = "mattymatty.FurnitureLock";
         public const string NAME = "FurnitureLock";
-        public const string VERSION = "1.3.2";
+        public const string VERSION = "1.3.3";
 
         internal static ManualLogSource Log;
         
@@ -32,8 +32,6 @@ namespace FurnitureLock
             {
 				if (LobbyCompatibilityChecker.Enabled)
 					LobbyCompatibilityChecker.Init();
-				if (AsyncLoggerProxy.Enabled)
-					AsyncLoggerProxy.WriteEvent(NAME, "Awake", "Initializing");
 				Log.LogInfo("Initializing Configs");
 
 				PluginConfig.Init();
@@ -43,8 +41,6 @@ namespace FurnitureLock
 				harmony.PatchAll(Assembly.GetExecutingAssembly());
 				
 				Log.LogInfo(NAME + " v" + VERSION + " Loaded!");
-				if (AsyncLoggerProxy.Enabled)
-					AsyncLoggerProxy.WriteEvent(NAME, "Awake", "Finished Initializing");
             }
             catch (Exception ex)
             {
@@ -59,6 +55,11 @@ namespace FurnitureLock
             internal static void Init()
             {
                 var config = INSTANCE.Config;
+
+                if (LethalConfigProxy.Enabled)
+                {
+	                LethalConfigProxy.AddButton("Cleanup", "Clear old entries", "remove unused entries in the config file\n(IF RUN FROM MENU WILL DELETE ALL ITEMS!!)", "Clean&Save", CleanAndSave);
+                }
                 //Initialize Configs
 	        }
 

@@ -4,7 +4,7 @@
         <RootNamespace>FurnitureLock</RootNamespace>
         <AssemblyName>FurnitureLock</AssemblyName>
         <Product>FurnitureLock</Product>
-        <Version>1.3.2</Version>
+        <Version>1.3.3</Version>
         <TargetFramework>netstandard2.1</TargetFramework>
         <LangVersion>Latest</LangVersion>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
@@ -12,8 +12,10 @@
         <Platforms>AnyCPU</Platforms>
     </PropertyGroup>
     <ItemGroup>
-        <PackageReference Include="TeamBMX.LobbyCompatibility" Version="1.0.1"/>
         <PackageReference Include="BepInEx.Core" Version="5.4.21"/>
+        
+        <PackageReference Include="TeamBMX.LobbyCompatibility" Version="1.0.1"/>
+        <PackageReference Include="AinaVT-LethalConfig" Version="1.4.3" />
     </ItemGroup>
     <!-- Defining the reference files that have to be publicized. -->
     <ItemGroup>
@@ -30,8 +32,6 @@
         <Reference Include="$(GameDirectory)\Lethal Company_Data\Managed\UnityEngine.dll" Publicize="false"/>
         <Reference Include="$(GameDirectory)\Lethal Company_Data\Managed\UnityEngine.CoreModule.dll" Publicize="false"/>
         <Reference Include="$(GameDirectory)\Lethal Company_Data\Managed\UnityEngine.PhysicsModule.dll" Publicize="false"/>
-        <Reference Include="..\Dependencies\AsyncLoggers.dll" Publicize="false"/>
-        <Reference Include="..\Dependencies\LethalConfig.dll" Publicize="false"/>
     </ItemGroup>
     <Import Project="PostBuildEvents.targets"/>
     <!-- Embedded Debug -->

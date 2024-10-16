@@ -1,3 +1,6 @@
+### v1.3.3
+- keep orphan entries unless user manually clears them
+
 ### v1.3.1
 - gracefully handle some errors
 

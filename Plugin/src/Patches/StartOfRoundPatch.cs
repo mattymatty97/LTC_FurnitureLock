@@ -42,7 +42,7 @@ internal class StartOfRoundPatch
             }
         }
 
-        FurnitureLock.PluginConfig.CleanAndSave();
+        //FurnitureLock.PluginConfig.CleanAndSave();
     }
 
     [HarmonyPostfix]
