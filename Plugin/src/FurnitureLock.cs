@@ -6,6 +6,7 @@ using BepInEx;
 using BepInEx.Configuration;
 using BepInEx.Logging;
 using FurnitureLock.Config;
+using FurnitureLock.Patches;
 using HarmonyLib;
 // ReSharper disable MemberCanBePrivate.Global
 
@@ -18,7 +19,7 @@ namespace FurnitureLock
     {
         public const string GUID = "mattymatty.FurnitureLock";
         public const string NAME = "FurnitureLock";
-        public const string VERSION = "1.3.3";
+        public const string VERSION = "1.3.4";
 
         internal static ManualLogSource Log;
         
@@ -37,6 +38,9 @@ namespace FurnitureLock
 				PluginConfig.Init();
 				
 				Log.LogInfo("Patching Methods");
+				
+				ShipBuildModeManagerPatch.Init();
+				
 				var harmony = new Harmony(GUID);
 				harmony.PatchAll(Assembly.GetExecutingAssembly());
 				

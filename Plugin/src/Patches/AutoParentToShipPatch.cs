@@ -26,28 +26,53 @@ internal class AutoParentToShipPatch
         
         if (placeableObject.parentObjectSecondary)
         {
-            // Invert Position
-            config.DefaultPosition = placeableObject.parentObject.startingPosition
-                                                - (placeableObject.parentObjectSecondary.transform.position - placeableObject.mainMesh.transform.position)
-                                                - (placeableObject.mainMesh.transform.position - placeableObject.placeObjectCollider.transform.position);
-
             // Invert Rotation
-            var invertedFinalRotation = Quaternion.Inverse(Quaternion.Euler(placeableObject.parentObject.startingRotation));
-            var invertedQuaternion = invertedFinalRotation * placeableObject.parentObjectSecondary.transform.rotation;
-            config.DefaultRotation = (Quaternion.Inverse(placeableObject.mainMesh.transform.rotation) * invertedQuaternion).eulerAngles;
+            // Original: finalRotation = (Euler(placementRotation) * Inverse(mainMeshRotation)) * initialRotation
+
+            var finalRotation = placeableObject.parentObjectSecondary.transform.rotation;
+            var initialRotation = placeableObject.parentObjectSecondary.transform.rotation;
+            var mainMeshRotation = placeableObject.mainMesh.transform.rotation;
+
+            // First get the quaternion by multiplying by inverse of initialRotation
+            var quaternion = finalRotation * Quaternion.Inverse(initialRotation);
+
+            // Then solve for placementRotation
+            config.DefaultRotation = (quaternion * mainMeshRotation).eulerAngles;
+            
+            // Invert Position
+            // Original: finalPosition = placementPosition + (parentPos - mainMeshPos) + (mainMeshPos - colliderPos)
+
+            var finalPosition = placeableObject.parentObjectSecondary.position;
+            var offset1 = (placeableObject.parentObjectSecondary.transform.position - placeableObject.mainMesh.transform.position);
+            var offset2 = (placeableObject.mainMesh.transform.position - placeableObject.placeObjectCollider.transform.position);
+
+            config.DefaultPosition = finalPosition - offset1 - offset2;
         }
         else
         {
             // Calculate rotation
-            var transformedRotation = Quaternion.Euler(placeableObject.parentObject.rotationOffset);
-            var placementRotationQuaternion = Quaternion.Inverse(placeableObject.parentObject.transform.rotation) * transformedRotation * placeableObject.mainMesh.transform.rotation;
-            config.DefaultRotation = placementRotationQuaternion.eulerAngles;
+            // Original: finalRotation = (Euler(placementRotation) * Inverse(mainMeshRotation)) * initialRotation
+            // We also have rotationOffset = finalRotation.eulerAngles
+
+            var finalRotation = Quaternion.Euler(placeableObject.parentObject.rotationOffset);
+            var initialRotation = placeableObject.parentObject.transform.rotation;
+            var mainMeshRotation = placeableObject.mainMesh.transform.rotation;
+
+            // First get the quaternion
+            var quaternion = finalRotation * Quaternion.Inverse(initialRotation);
+
+            // Then solve for placementRotation
+            config.DefaultRotation = (quaternion * mainMeshRotation).eulerAngles;
 
             // Calculate position
-            var inversePositionOffset = StartOfRound.Instance.elevatorTransform.TransformPoint(placeableObject.parentObject.positionOffset);
-            config.DefaultPosition = inversePositionOffset - 
-                                     (placeableObject.parentObject.transform.position - placeableObject.mainMesh.transform.position) - 
-                                     (placeableObject.mainMesh.transform.position - placeableObject.placeObjectCollider.transform.position);
+            // Original: positionOffset = elevatorTransform.InverseTransformPoint(placementPosition + offset1 + offset2)
+            // Therefore: placementPosition = elevatorTransform.TransformPoint(positionOffset) - offset1 - offset2
+
+            var offset1 = (placeableObject.parentObject.transform.position - placeableObject.mainMesh.transform.position);
+            var offset2 = (placeableObject.mainMesh.transform.position - placeableObject.placeObjectCollider.transform.position);
+
+            // Transform the offset back to world space and solve for placementPosition
+            config.DefaultPosition = StartOfRound.Instance.elevatorTransform.TransformPoint(placeableObject.parentObject.positionOffset) - offset1 - offset2;
         }
 
         config.DefaultsInitialized = true;

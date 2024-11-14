@@ -19,6 +19,10 @@ public class UnlockableConfig
     {
         get
         {
+            if (Unlockable.unlockableType == 0)
+                return false;
+            if (!Unlockable.IsPlaceable)
+                return false;
             if (!_position.HasValue && !DefaultsInitialized)
                 return false;
             if (!_rotation.HasValue && !DefaultsInitialized)
@@ -41,7 +45,7 @@ public class UnlockableConfig
         get => _rotation ?? DefaultRotation;
         private set => _rotation = value;
     }
-
+    
     public Vector3 DefaultPosition { get; internal set; }
     public Vector3 DefaultRotation { get; internal set; }
     public bool Locked { get; private set; }
@@ -51,7 +55,6 @@ public class UnlockableConfig
         get => _stored && !Locked;
         private set => _stored = value;
     }
-
     internal ConfigEntry<string> PositionConfig { get; private set; }
     internal ConfigEntry<string> RotationConfig { get; private set; }
     internal ConfigEntry<bool> LockedConfig { get; private set; }
@@ -68,48 +71,53 @@ public class UnlockableConfig
         var strippedName = Regex.Replace(name,@"[\n\t\\\'\[\]]", "").Trim();
 
         var config = FurnitureLock.INSTANCE.Config;
-
-        PositionConfig = config.Bind(strippedName, "position", "default", "default position of the Furniture piece.");
-        RotationConfig = config.Bind(strippedName, "rotation", "default", "default rotation of the Furniture piece.");
-        LockedConfig = config.Bind(strippedName, "locked", false, "if true the furniture piece will not be movable");
-        if (unlockable.canBeStored)
-            StoredConfig = config.Bind(strippedName, "spawn_stored", false, "if true the furniture piece will be stored immediately upon spawn");
-       
-
-        if (LethalConfigProxy.Enabled)
+        
+        if (Unlockable.IsPlaceable)
         {
-            LethalConfigProxy.AddConfig(PositionConfig);
-            LethalConfigProxy.AddConfig(RotationConfig);
-            LethalConfigProxy.AddConfig(LockedConfig);
+            PositionConfig = config.Bind(strippedName, "position", "default",
+                "default position of the Furniture piece.");
+            RotationConfig = config.Bind(strippedName, "rotation", "default",
+                "default rotation of the Furniture piece.");
+            LockedConfig = config.Bind(strippedName, "locked", false,
+                "if true the furniture piece will not be movable");
             if (unlockable.canBeStored)
-                LethalConfigProxy.AddConfig(StoredConfig);
+                StoredConfig = config.Bind(strippedName, "spawn_stored", false,
+                    "if true the furniture piece will be stored immediately upon spawn");
 
-            LethalConfigProxy.AddButton(strippedName, "Set Values", "copy current position and rotation to config", "Copy",
-                CopyValues);
+            if (LethalConfigProxy.Enabled)
+            {
+                LethalConfigProxy.AddConfig(PositionConfig);
+                LethalConfigProxy.AddConfig(RotationConfig);
+                LethalConfigProxy.AddConfig(LockedConfig);
+                if (unlockable.canBeStored)
+                    LethalConfigProxy.AddConfig(StoredConfig);
 
+                LethalConfigProxy.AddButton(strippedName, "Set Values", "copy current position and rotation to config", "Copy",
+                    CopyValues);
+
+                
+
+                LethalConfigProxy.AddButton(strippedName, "Apply values", "apply current config values", "Apply",
+                    ()=>ApplyValues());
+            }
+
+            OnPositionConfigOnSettingChanged();
+            PositionConfig.SettingChanged += (_, _) => OnPositionConfigOnSettingChanged();
+
+            OnRotationConfigOnSettingChanged();
+            RotationConfig.SettingChanged += (_, _) => OnRotationConfigOnSettingChanged();
+
+            OnLockedConfigOnSettingChanged();
+            LockedConfig.SettingChanged += (_, _) => OnLockedConfigOnSettingChanged();
             
+            if (unlockable.canBeStored)
+            {
+                OnStoredConfigOnSettingChanged();
+                StoredConfig!.SettingChanged += (_, _) => OnStoredConfigOnSettingChanged();
+            }
 
-            LethalConfigProxy.AddButton(strippedName, "Apply values", "apply current config values", "Apply",
-                ()=>ApplyValues());
+            FurnitureLock.Log.LogDebug($"Placeable \"{unlockable.unlockableName}\" pos: {Position} rot: {Rotation} lock:{Locked} stored:{Stored}");
         }
-
-        OnPositionConfigOnSettingChanged();
-        PositionConfig.SettingChanged += (_, _) => OnPositionConfigOnSettingChanged();
-
-        OnRotationConfigOnSettingChanged();
-        RotationConfig.SettingChanged += (_, _) => OnRotationConfigOnSettingChanged();
-
-        OnLockedConfigOnSettingChanged();
-        LockedConfig.SettingChanged += (_, _) => OnLockedConfigOnSettingChanged();
-        
-        if (unlockable.canBeStored)
-        {
-            OnStoredConfigOnSettingChanged();
-            StoredConfig!.SettingChanged += (_, _) => OnStoredConfigOnSettingChanged();
-        }
-
-        FurnitureLock.Log.LogDebug($"{unlockable.unlockableName} pos: {Position} rot: {Rotation} lock:{Locked} stored:{Stored}");
-        
     }
     
     internal void CopyValues()
@@ -154,7 +162,7 @@ public class UnlockableConfig
                     return;
             }
 
-            if (!Stored && Unlockable.inStorage)
+            if ((!Stored || Locked) && Unlockable.inStorage)
             {
                 startOfRound.ReturnUnlockableFromStorageServerRpc(UnlockableID);
                 FurnitureLock.Log.LogDebug($"{Unlockable.unlockableName} Forced out of storage");
@@ -171,7 +179,7 @@ public class UnlockableConfig
                 FurnitureLock.Log.LogDebug($"{Unlockable.unlockableName} moved to pos:{Position} rot:{Rotation}");
             }
 
-            if (Stored && !Unlockable.inStorage)
+            if (Stored && !Locked && !Unlockable.inStorage)
             {
                 ShipBuildModeManager.Instance.StoreObjectServerRpc(gameObject, -1);
                 FurnitureLock.Log.LogDebug($"{Unlockable.unlockableName} Forced in storage");

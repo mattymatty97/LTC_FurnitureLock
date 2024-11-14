@@ -11,9 +11,9 @@ namespace FurnitureLock.Patches;
 internal class StartOfRoundPatch
 {
 
-    [HarmonyPrefix]
+    [HarmonyPostfix]
     [HarmonyPatch(nameof(StartOfRound.Start))]
-    [HarmonyPriority(Priority.First)]
+    [HarmonyPriority(Priority.Last)]
     private static void BeforeStart(StartOfRound __instance)
     {
         if (!__instance.IsServer)
@@ -75,7 +75,7 @@ internal class StartOfRoundPatch
 
         if (ES3.KeyExists("ShipUnlockMoved_" + unlockable.unlockableName, gameNetworkManager.currentSaveFileName))
         {
-            FurnitureLock.Log.LogDebug($"{unlockable.unlockableName} was moved locked {config.Locked}");
+            FurnitureLock.Log.LogDebug($"{unlockable.unlockableName} was moved. locked? {config.Locked}");
 
             //if we're not locked use stored locations
             if (!config.Locked)
@@ -103,6 +103,7 @@ internal class StartOfRoundPatch
 
     private static void ApplyDefaults(StartOfRound startOfRound, bool skipMoved)
     {
+       
         var placeableShipObjects = Object.FindObjectsOfType<PlaceableShipObject>();
         foreach (var shipObject in placeableShipObjects)
         {
@@ -130,5 +131,24 @@ internal class StartOfRoundPatch
                 FurnitureLock.Log.LogError($"Error defaulting {unlockable.unlockableName}:\n{ex}");
             }
         }
+        
+        foreach (var unlockable in startOfRound.unlockablesList.unlockables)
+        {
+            if (unlockable.unlockableType == 0)
+                continue;
+
+            if (!unlockable.IsPlaceable)
+                continue;
+
+            if (!FurnitureLock.PluginConfig.UnlockableConfigs.TryGetValue(unlockable, out var config))
+                continue;
+
+            if (config.Locked && unlockable.inStorage)
+            {
+                startOfRound.ReturnUnlockableFromStorageServerRpc(config.UnlockableID);
+            }
+        }
+        
+
     }
 }

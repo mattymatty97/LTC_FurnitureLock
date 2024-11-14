@@ -7,36 +7,66 @@ namespace FurnitureLock.Patches;
 [HarmonyPatch(typeof(ShipBuildModeManager))]
 internal class ShipBuildModeManagerPatch
 {
-    [HarmonyFinalizer]
-    [HarmonyPatch(nameof(ShipBuildModeManager.StoreObjectServerRpc))]
-    [HarmonyPriority(Priority.Last)]
-    private static void PreventStore(ShipBuildModeManager __instance, NetworkObjectReference objectRef)
+    private static uint? _returnUnlockableFromStorageClientRpcID;
+    internal static void Init()
     {
-        if (!__instance.IsServer)
-            return;
-        
-        if (!objectRef.TryGet(out var networkObject))
-            return;
-    
-        var shipObject = networkObject.gameObject.GetComponentInChildren<PlaceableShipObject>();
-        if (shipObject == null)
-            return;
-    
-        var unlockable = StartOfRound.Instance.unlockablesList.unlockables[shipObject.unlockableID];
-        if(!unlockable.inStorage)
-            return;
-    
-        if (!FurnitureLock.PluginConfig.UnlockableConfigs.TryGetValue(unlockable, out var config))
-            return;
-    
-        if (!config.Locked)
-            return;
+        var methodInfo =
+            AccessTools.Method(typeof(StartOfRound), nameof(StartOfRound.ReturnUnlockableFromStorageClientRpc));
 
-        FurnitureLock.Log.LogDebug($"Prevented Store for {unlockable.unlockableName}");
-        StartOfRound.Instance.ReturnUnlockableFromStorageServerRpc(shipObject.unlockableID);
+        if (Utils.TryGetRpcID(methodInfo, out var id))
+        {
+            _returnUnlockableFromStorageClientRpcID = id;
+        }
     }
     
-    
+    [HarmonyPrefix]
+    [HarmonyPatch(nameof(ShipBuildModeManager.StoreObjectServerRpc))]
+    [HarmonyPriority(Priority.Last)]
+    private static bool PreventStore(ShipBuildModeManager __instance, NetworkObjectReference objectRef, int playerWhoStored)
+    {
+        var networkManager = __instance.NetworkManager;
+        if (__instance.__rpc_exec_stage != NetworkBehaviour.__RpcExecStage.Server ||
+            !networkManager.IsServer && !networkManager.IsHost)
+            return true;
+        
+        if (!objectRef.TryGet(out var networkObject))
+            return true;
+
+        var shipObject = networkObject.gameObject.GetComponentInChildren<PlaceableShipObject>();
+        if (shipObject == null)
+            return true;
+        
+        var unlockable = StartOfRound.Instance.unlockablesList.unlockables[shipObject.unlockableID];
+
+        if (!FurnitureLock.PluginConfig.UnlockableConfigs.TryGetValue(unlockable, out var config))
+            return true;
+
+        if (!config.Locked)
+            return true;
+        
+        FurnitureLock.Log.LogDebug($"Prevented Store for {unlockable.unlockableName}");
+
+        if (_returnUnlockableFromStorageClientRpcID.HasValue)
+        {
+            var rpcID = _returnUnlockableFromStorageClientRpcID.Value;
+            var startOfRound = StartOfRound.Instance;
+            ClientRpcParams clientRpcParams = new ClientRpcParams
+            {
+                Send = new ClientRpcSendParams
+                {
+                    TargetClientIds =
+                    [
+                        (ulong)playerWhoStored
+                    ]
+                }
+            };
+            FastBufferWriter bufferWriter = startOfRound.__beginSendClientRpc(rpcID, clientRpcParams, RpcDelivery.Reliable);
+            BytePacker.WriteValueBitPacked(bufferWriter, shipObject.unlockableID);
+            startOfRound.__endSendClientRpc(ref bufferWriter, rpcID, clientRpcParams, RpcDelivery.Reliable);
+        }
+
+        return false;
+    }
 
     [HarmonyPrefix]
     [HarmonyPatch(nameof(ShipBuildModeManager.PlaceShipObjectServerRpc))]

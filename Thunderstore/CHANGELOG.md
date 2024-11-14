@@ -1,3 +1,8 @@
+### v1.3.4
+- fixed default rotations of some items
+- prevent storing of locked furniture
+- pull locked furniture out of storage while creating a lobby
+
 ### v1.3.3
 - keep orphan entries unless user manually clears them
 
