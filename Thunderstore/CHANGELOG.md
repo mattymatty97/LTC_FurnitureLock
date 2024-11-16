@@ -1,3 +1,6 @@
+### v1.3.6
+- i'm dumb
+
 ### v1.3.5
 - slightly more verbose logs when registering an unlockable
 
