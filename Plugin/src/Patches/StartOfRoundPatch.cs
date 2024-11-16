@@ -12,40 +12,6 @@ internal class StartOfRoundPatch
 {
 
     [HarmonyPostfix]
-    [HarmonyPatch(nameof(StartOfRound.Start))]
-    [HarmonyPriority(Priority.Last)]
-    private static void BeforeStart(StartOfRound __instance)
-    {
-        if (!__instance.IsServer)
-            return;
-        
-        //Bind config
-        for (var index = 0; index < __instance.unlockablesList.unlockables.Count; index++)
-        {
-            var unlockable = __instance.unlockablesList.unlockables[index];
-            //do not handle suits
-            if (unlockable.unlockableType == 0)
-                continue;
-
-            if (!unlockable.IsPlaceable)
-                continue;
-
-            if (FurnitureLock.PluginConfig.UnlockableConfigs.ContainsKey(unlockable))
-                continue;
-            try
-            {
-                FurnitureLock.PluginConfig.UnlockableConfigs[unlockable] = new UnlockableConfig(unlockable, index);
-            }
-            catch (Exception ex)
-            {
-                FurnitureLock.Log.LogError(ex);
-            }
-        }
-
-        //FurnitureLock.PluginConfig.CleanAndSave();
-    }
-
-    [HarmonyPostfix]
     [HarmonyPatch(nameof(StartOfRound.LoadUnlockables))]
     [HarmonyPriority(Priority.Last)]
     private static void AfterLoadUnlockables(StartOfRound __instance)

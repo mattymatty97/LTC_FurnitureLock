@@ -1,3 +1,6 @@
+### v1.3.5
+- slightly more verbose logs when registering an unlockable
+
 ### v1.3.4
 - fixed default rotations of some items
 - prevent storing of locked furniture
