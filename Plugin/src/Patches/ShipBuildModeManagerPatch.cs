@@ -18,7 +18,39 @@ internal class ShipBuildModeManagerPatch
             _returnUnlockableFromStorageClientRpcID = id;
         }
     }
-    
+
+    [HarmonyPrefix]
+    [HarmonyPatch(nameof(ShipBuildModeManager.StoreObjectLocalClient))]
+    [HarmonyPriority(Priority.Last)]
+    private static bool PreventStoreHost(ShipBuildModeManager __instance)
+    {
+        if (!__instance.IsServer)
+            return true;
+
+        if ( __instance.timeSincePlacingObject <= 0.25 ||
+             !__instance.InBuildMode ||
+             !__instance.placingObject ||
+             !StartOfRound.Instance.unlockablesList.unlockables[__instance.placingObject.unlockableID].canBeStored)
+            return true;
+
+        var shipObject = __instance.placingObject;
+        if (shipObject == null)
+            return true;
+
+        var unlockable = StartOfRound.Instance.unlockablesList.unlockables[shipObject.unlockableID];
+
+        if (!FurnitureLock.PluginConfig.UnlockableConfigs.TryGetValue(unlockable, out var config))
+            return true;
+
+        if (!config.Locked)
+            return true;
+
+        FurnitureLock.Log.LogDebug($"Prevented Store for {unlockable.unlockableName}");
+        __instance.CancelBuildMode(false);
+        shipObject.GetComponent<AudioSource>().PlayOneShot(shipObject.placeObjectSFX);
+        return false;
+    }
+
     [HarmonyPrefix]
     [HarmonyPatch(nameof(ShipBuildModeManager.StoreObjectServerRpc))]
     [HarmonyPriority(Priority.Last)]

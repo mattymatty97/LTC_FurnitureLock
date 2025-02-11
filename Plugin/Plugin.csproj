@@ -4,7 +4,7 @@
         <RootNamespace>FurnitureLock</RootNamespace>
         <AssemblyName>FurnitureLock</AssemblyName>
         <Product>FurnitureLock</Product>
-        <Version>1.3.6</Version>
+        <Version>1.3.7</Version>
         <TargetFramework>netstandard2.1</TargetFramework>
         <LangVersion>Latest</LangVersion>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
@@ -30,6 +30,7 @@
 
         <!-- clean referencing -->
         <Reference Include="$(GameDirectory)\Lethal Company_Data\Managed\UnityEngine.dll" Publicize="false"/>
+        <Reference Include="$(GameDirectory)\Lethal Company_Data\Managed\UnityEngine.AudioModule.dll" Publicize="false"/>
         <Reference Include="$(GameDirectory)\Lethal Company_Data\Managed\UnityEngine.CoreModule.dll" Publicize="false"/>
         <Reference Include="$(GameDirectory)\Lethal Company_Data\Managed\UnityEngine.PhysicsModule.dll" Publicize="false"/>
     </ItemGroup>

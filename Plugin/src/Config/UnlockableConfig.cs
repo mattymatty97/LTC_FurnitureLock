@@ -48,7 +48,7 @@ public class UnlockableConfig
     
     public Vector3 DefaultPosition { get; internal set; }
     public Vector3 DefaultRotation { get; internal set; }
-    public bool Locked { get; private set; }
+    public bool Locked { get; internal set; }
 
     public bool Stored
     {
@@ -239,6 +239,8 @@ public class UnlockableConfig
     private void OnLockedConfigOnSettingChanged()
     {
         Locked = LockedConfig.Value;
+        if (Locked)
+            ApplyValues();
     }
         
 

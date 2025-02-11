@@ -19,7 +19,7 @@ namespace FurnitureLock
     {
         public const string GUID = "mattymatty.FurnitureLock";
         public const string NAME = "FurnitureLock";
-        public const string VERSION = "1.3.6";
+        public const string VERSION = "1.3.7";
 
         internal static ManualLogSource Log;
         
@@ -63,6 +63,9 @@ namespace FurnitureLock
                 if (LethalConfigProxy.Enabled)
                 {
 	                LethalConfigProxy.AddButton("Cleanup", "Clear old entries", "remove unused entries in the config file\n(IF RUN FROM MENU WILL DELETE ALL ITEMS!!)", "Clean&Save", CleanAndSave);
+	                LethalConfigProxy.AddButton("Bulk Actions", "Copy All", "copy position and rotation of all the furniture in the lobby\n(THIS WILL OVERWRITE ALL VALUES!!)", "Copy All", CopyAll);
+	                LethalConfigProxy.AddButton("Bulk Actions", "Lock All", "mark all the furniture as locked\n(THIS WILL PULL ALL THE FURNITURE OUT OF STORAGE)", "Lock All", LockAll);
+	                LethalConfigProxy.AddButton("Bulk Actions", "Unlock All", "mark all the furniture as unlocked", "Unlock All", UnlockAll);
                 }
                 //Initialize Configs
 	        }
@@ -77,6 +80,52 @@ namespace FurnitureLock
 
 	            orphanedEntries.Clear(); // Clear orphaned entries (Unbinded/Abandoned entries)
 	            config.Save(); // Save the config file
+            }
+            
+            internal static void CopyAll()
+            {
+	            var config = INSTANCE.Config;
+	            
+	            foreach (var unlockableConfig in UnlockableConfigs.Values)
+	            {
+		            if (!unlockableConfig.IsValid)
+			            continue;
+		            
+		            unlockableConfig.CopyValues();
+	            }
+
+	            config.Save();
+            }
+            
+            internal static void LockAll()
+            {
+	            var config = INSTANCE.Config;
+	            
+	            foreach (var unlockableConfig in UnlockableConfigs.Values)
+	            {
+		            if (!unlockableConfig.IsValid)
+			            continue;
+		            
+		            unlockableConfig.Locked = true;
+		            unlockableConfig.ApplyValues();
+	            }
+
+	            config.Save();
+            }
+            
+            internal static void UnlockAll()
+            {
+	            var config = INSTANCE.Config;
+	            
+	            foreach (var unlockableConfig in UnlockableConfigs.Values)
+	            {
+		            if (!unlockableConfig.IsValid)
+			            continue;
+		            
+		            unlockableConfig.Locked = false;
+	            }
+
+	            config.Save();
             }
             
         }

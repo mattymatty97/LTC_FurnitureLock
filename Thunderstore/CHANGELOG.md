@@ -1,3 +1,7 @@
+### v1.3.7
+- correctly prevent storing object from the host
+- add Bulk actions to LethalConfig
+
 ### v1.3.6
 - i'm dumb
 
