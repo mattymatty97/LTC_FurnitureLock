@@ -1,3 +1,6 @@
+### v1.3.8
+- prevent moving sounds when loading a save and/or respawning after being ejected
+
 ### v1.3.7
 - correctly prevent storing object from the host
 - add Bulk actions to LethalConfig

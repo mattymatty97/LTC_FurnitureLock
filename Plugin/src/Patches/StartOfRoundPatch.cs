@@ -1,6 +1,8 @@
 ﻿using System;
 using FurnitureLock.Config;
 using HarmonyLib;
+using MonoMod.RuntimeDetour;
+using MonoMod.Utils;
 using Unity.Netcode;
 using UnityEngine;
 using Object = UnityEngine.Object;
@@ -10,7 +12,51 @@ namespace FurnitureLock.Patches;
 [HarmonyPatch(typeof(StartOfRound))]
 internal class StartOfRoundPatch
 {
-    
+
+    private static bool _isShipResetting = false;
+
+    internal static void Init()
+    {
+
+        var resetShipFurnitureMethod = AccessTools.Method(typeof(StartOfRound), nameof(StartOfRound.ResetShipFurniture));
+
+        FurnitureLock.Hooks.Add(new Hook(resetShipFurnitureMethod, OnResetShipFurniture));
+
+
+        var loadUnlockablesMethod = AccessTools.Method(typeof(StartOfRound), nameof(StartOfRound.LoadUnlockables));
+
+        FurnitureLock.Hooks.Add(new Hook(loadUnlockablesMethod, OnLoadUnlockables));
+
+    }
+
+    private static void OnResetShipFurniture(Action<StartOfRound, bool, bool> orig, StartOfRound self, bool onlyClearBoughtFurniture,
+        bool despawnProps)
+    {
+        _isShipResetting = true;
+        try
+        {
+            orig(self, onlyClearBoughtFurniture, despawnProps);
+        }
+        finally
+        {
+            _isShipResetting = false;
+        }
+    }
+
+    private static void OnLoadUnlockables(Action<StartOfRound> orig, StartOfRound self)
+    {
+        _isShipResetting = true;
+        try
+        {
+            orig(self);
+        }
+        finally
+        {
+            _isShipResetting = false;
+        }
+    }
+
+
     [HarmonyFinalizer]
     [HarmonyPatch(nameof(StartOfRound.Start))]
     [HarmonyPriority(Priority.Last)]
@@ -42,7 +88,7 @@ internal class StartOfRoundPatch
         if (!__instance.IsServer)
             return;
 
-        ApplyDefaults(__instance, true);
+        ApplyDefaults(__instance, false, true, true);
     }
 
     [HarmonyPostfix]
@@ -50,6 +96,9 @@ internal class StartOfRoundPatch
     private static void AfterUnlockableSpawn(StartOfRound __instance, int unlockableIndex)
     {
         if (!__instance.IsServer)
+            return;
+
+        if (_isShipResetting)
             return;
     
         var unlockable = __instance.unlockablesList.unlockables[unlockableIndex];
@@ -87,10 +136,10 @@ internal class StartOfRoundPatch
         if (!__instance.IsServer)
             return;
 
-        ApplyDefaults(__instance,false);
+        ApplyDefaults(__instance,false, true);
     }
 
-    private static void ApplyDefaults(StartOfRound startOfRound, bool skipMoved)
+    private static void ApplyDefaults(StartOfRound startOfRound, bool skipMoved, bool silent = false, bool localOnly = false)
     {
        
         var placeableShipObjects = Object.FindObjectsOfType<PlaceableShipObject>();
@@ -113,7 +162,7 @@ internal class StartOfRoundPatch
                 if (!FurnitureLock.PluginConfig.UnlockableConfigs.TryGetValue(unlockable, out var config))
                     continue;
 
-                config.ApplyValues(gameObject, false);
+                config.ApplyValues(gameObject, false, silent || localOnly);
             }
             catch (Exception ex)
             {
@@ -137,7 +186,8 @@ internal class StartOfRoundPatch
                 startOfRound.ReturnUnlockableFromStorageServerRpc(config.UnlockableID);
             }
         }
-        
 
+        if (silent && !localOnly)
+            StartOfRound.Instance.SyncShipUnlockablesServerRpc();
     }
 }

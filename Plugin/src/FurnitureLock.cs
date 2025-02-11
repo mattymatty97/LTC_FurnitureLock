@@ -8,6 +8,8 @@ using BepInEx.Logging;
 using FurnitureLock.Config;
 using FurnitureLock.Patches;
 using HarmonyLib;
+using MonoMod.RuntimeDetour;
+
 // ReSharper disable MemberCanBePrivate.Global
 
 namespace FurnitureLock
@@ -19,9 +21,11 @@ namespace FurnitureLock
     {
         public const string GUID = "mattymatty.FurnitureLock";
         public const string NAME = "FurnitureLock";
-        public const string VERSION = "1.3.7";
+        public const string VERSION = "1.3.8";
 
         internal static ManualLogSource Log;
+        internal static readonly List<Hook> Hooks = [];
+        internal static readonly Harmony Harmony = new Harmony(GUID);
         
         public static FurnitureLock INSTANCE { get; private set; }
         
@@ -40,9 +44,9 @@ namespace FurnitureLock
 				Log.LogInfo("Patching Methods");
 				
 				ShipBuildModeManagerPatch.Init();
-				
-				var harmony = new Harmony(GUID);
-				harmony.PatchAll(Assembly.GetExecutingAssembly());
+				StartOfRoundPatch.Init();
+
+	            Harmony.PatchAll(Assembly.GetExecutingAssembly());
 				
 				Log.LogInfo(NAME + " v" + VERSION + " Loaded!");
             }

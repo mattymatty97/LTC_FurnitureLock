@@ -117,7 +117,7 @@ public class UnlockableConfig
         OnRotationConfigOnSettingChanged();
         RotationConfig.SettingChanged += (_, _) => OnRotationConfigOnSettingChanged();
 
-        OnLockedConfigOnSettingChanged();
+        Locked = LockedConfig.Value;
         LockedConfig.SettingChanged += (_, _) => OnLockedConfigOnSettingChanged();
 
         if (unlockable.canBeStored)
@@ -144,7 +144,7 @@ public class UnlockableConfig
         RotationConfig.Value = $"{rot.x.ToString(CultureInfo.InvariantCulture)}, {rot.y.ToString(CultureInfo.InvariantCulture)}, {rot.z.ToString(CultureInfo.InvariantCulture)}";
     }
     
-    internal void ApplyValues(GameObject gameObject = null, bool placementSound = true)
+    internal void ApplyValues(GameObject gameObject = null, bool placementSound = true, bool localOnly = false)
     {
         try
         {
@@ -181,7 +181,7 @@ public class UnlockableConfig
             if (IsValid)
             {
                 ShipBuildModeManager.Instance.PlaceShipObject(Position, Rotation, placeableShipObject, placementSound);
-                if (GameNetworkManager.Instance.localPlayerController != null)
+                if (!localOnly)
                     ShipBuildModeManager.Instance.PlaceShipObjectServerRpc(Position, Rotation, gameObject,
                         (int)GameNetworkManager.Instance.localPlayerController.playerClientId);
 
