@@ -88,7 +88,7 @@ internal class StartOfRoundPatch
         if (!__instance.IsServer)
             return;
 
-        ApplyDefaults(__instance, false, true, true);
+        ApplyDefaults(__instance, true, true, true);
     }
 
     [HarmonyPostfix]
@@ -120,7 +120,7 @@ internal class StartOfRoundPatch
                 return;
         }
         
-        config.ApplyValues(gameObject, false);
+        config.ApplyValues(gameObject, false, gameNetworkManager.localPlayerController == null);
     }
 
     [HarmonyPostfix]
@@ -156,10 +156,10 @@ internal class StartOfRoundPatch
                 if (!unlockable.IsPlaceable)
                     continue;
 
-                if (skipMoved && unlockable.hasBeenMoved)
+                if (!FurnitureLock.PluginConfig.UnlockableConfigs.TryGetValue(unlockable, out var config))
                     continue;
 
-                if (!FurnitureLock.PluginConfig.UnlockableConfigs.TryGetValue(unlockable, out var config))
+                if (skipMoved && unlockable.hasBeenMoved && !config.Locked)
                     continue;
 
                 config.ApplyValues(gameObject, false, silent || localOnly);

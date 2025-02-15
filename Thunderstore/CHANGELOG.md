@@ -1,3 +1,6 @@
+### v1.3.9
+- hopefully fix compatibility with `UnlockOnStart`
+
 ### v1.3.8
 - prevent moving sounds when loading a save and/or respawning after being ejected
 
