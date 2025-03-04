@@ -19,9 +19,9 @@ namespace FurnitureLock
     [BepInDependency("ainavt.lc.lethalconfig", Flags:BepInDependency.DependencyFlags.SoftDependency)]
     internal class FurnitureLock : BaseUnityPlugin
     {
-        public const string GUID = "mattymatty.FurnitureLock";
-        public const string NAME = "FurnitureLock";
-        public const string VERSION = "1.3.9";
+        public const string GUID = MyPluginInfo.PLUGIN_GUID;
+        public const string NAME = MyPluginInfo.PLUGIN_NAME;
+        public const string VERSION = MyPluginInfo.PLUGIN_VERSION;
 
         internal static ManualLogSource Log;
         internal static readonly List<Hook> Hooks = [];

@@ -2,8 +2,5 @@
 packages
 **/bin
 **/obj
-GameDirectory.targets
-Thunderstore/*.dll
-Thunderstore/**/*.dll
 Output/
 *.DotSettings.user
