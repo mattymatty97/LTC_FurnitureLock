@@ -25,7 +25,7 @@ namespace FurnitureLock
 
         internal static ManualLogSource Log;
         internal static readonly List<Hook> Hooks = [];
-        internal static readonly Harmony Harmony = new Harmony(GUID);
+        internal static readonly Harmony Harmony = new (GUID);
         
         public static FurnitureLock INSTANCE { get; private set; }
         

@@ -1,3 +1,6 @@
+### v1.4.0
+- add ability to unlock extra furniture in new files
+
 ### v1.3.9
 - hopefully fix compatibility with `UnlockOnStart`
 

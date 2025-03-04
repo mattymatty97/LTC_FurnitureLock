@@ -2,9 +2,6 @@
 using FurnitureLock.Config;
 using HarmonyLib;
 using MonoMod.RuntimeDetour;
-using MonoMod.Utils;
-using Unity.Netcode;
-using UnityEngine;
 using Object = UnityEngine.Object;
 
 namespace FurnitureLock.Patches;
@@ -13,7 +10,7 @@ namespace FurnitureLock.Patches;
 internal class StartOfRoundPatch
 {
 
-    private static bool _isShipResetting = false;
+    private static bool _isShipResetting;
 
     internal static void Init()
     {
@@ -29,13 +26,33 @@ internal class StartOfRoundPatch
 
     }
 
-    private static void OnResetShipFurniture(Action<StartOfRound, bool, bool> orig, StartOfRound self, bool onlyClearBoughtFurniture,
+    private static void OnResetShipFurniture(Action<StartOfRound, bool, bool> original, StartOfRound self, bool onlyClearBoughtFurniture,
         bool despawnProps)
     {
         _isShipResetting = true;
         try
         {
-            orig(self, onlyClearBoughtFurniture, despawnProps);
+            //run vanilla code
+            original(self, onlyClearBoughtFurniture, despawnProps);
+
+            //on host
+            if (!self.IsServer)
+                return;
+
+            //unlock extra furniture
+            foreach (var unlockable in self.unlockablesList.unlockables)
+            {
+                if (!FurnitureLock.PluginConfig.UnlockableConfigs.TryGetValue(unlockable, out var config))
+                    continue;
+
+                if (config.AlreadyUnlocked && !unlockable.hasBeenUnlockedByPlayer)
+                {
+                    self.UnlockShipObject(config.UnlockableID);
+                }
+            }
+
+            //move stuff to configured positions
+            ApplyDefaults(self,false, true);
         }
         finally
         {
@@ -43,52 +60,61 @@ internal class StartOfRoundPatch
         }
     }
 
-    private static void OnLoadUnlockables(Action<StartOfRound> orig, StartOfRound self)
+    private static void OnLoadUnlockables(Action<StartOfRound> original, StartOfRound self)
     {
         _isShipResetting = true;
         try
         {
-            orig(self);
+            //register unlockables
+            for (var index = 0; index < self.unlockablesList.unlockables.Count; index++)
+            {
+                var unlockable = self.unlockablesList.unlockables[index];
+
+                if (FurnitureLock.PluginConfig.UnlockableConfigs.ContainsKey(unlockable))
+                    continue;
+
+                try
+                {
+                    FurnitureLock.PluginConfig.UnlockableConfigs[unlockable] = new UnlockableConfig(unlockable, index);
+                }
+                catch (Exception ex)
+                {
+                    FurnitureLock.Log.LogError($"Exception registering {unlockable.unlockableName}: {ex}");
+                }
+            }
+
+            var isNewFile = !ES3.KeyExists("UnlockedShipObjects", GameNetworkManager.Instance.currentSaveFileName);
+
+            //run vanilla function
+            original(self);
+
+            //on host
+            if (!self.IsServer)
+                return;
+
+            if (isNewFile)
+            {
+                //unlock extra furniture
+                foreach (var unlockable in self.unlockablesList.unlockables)
+                {
+                    if (!FurnitureLock.PluginConfig.UnlockableConfigs.TryGetValue(unlockable, out var config))
+                        continue;
+
+                    if (config.AlreadyUnlocked && !unlockable.hasBeenUnlockedByPlayer)
+                    {
+                        self.UnlockShipObject(config.UnlockableID);
+                        config.ApplyValues(null, false, true);
+                    }
+                }
+            }
+
+            //move stuff to configured positions
+            ApplyDefaults(self, true, true, true);
         }
         finally
         {
             _isShipResetting = false;
         }
-    }
-
-
-    [HarmonyFinalizer]
-    [HarmonyPatch(nameof(StartOfRound.Start))]
-    [HarmonyPriority(Priority.Last)]
-    private static void BeforeStart(StartOfRound __instance)
-    {
-        //Bind config
-        for (var index = 0; index < __instance.unlockablesList.unlockables.Count; index++)
-        {
-            var unlockable = __instance.unlockablesList.unlockables[index];
-
-            if (FurnitureLock.PluginConfig.UnlockableConfigs.ContainsKey(unlockable))
-                continue;
-            try
-            {
-                FurnitureLock.PluginConfig.UnlockableConfigs[unlockable] = new UnlockableConfig(unlockable, index);
-            }
-            catch (Exception ex)
-            {
-                FurnitureLock.Log.LogError(ex);
-            }
-        }
-    }
-    
-    [HarmonyPostfix]
-    [HarmonyPatch(nameof(StartOfRound.LoadUnlockables))]
-    [HarmonyPriority(Priority.Last)]
-    private static void AfterLoadUnlockables(StartOfRound __instance)
-    {
-        if (!__instance.IsServer)
-            return;
-
-        ApplyDefaults(__instance, true, true, true);
     }
 
     [HarmonyPostfix]
@@ -121,22 +147,6 @@ internal class StartOfRoundPatch
         }
         
         config.ApplyValues(gameObject, false, gameNetworkManager.localPlayerController == null);
-    }
-
-    [HarmonyPostfix]
-    [HarmonyPatch(nameof(StartOfRound.EndPlayersFiredSequenceClientRpc))]
-    private static void AfterEject(StartOfRound __instance)
-    {
-        var networkManager = __instance.NetworkManager;
-        if (networkManager == null || !networkManager.IsListening)
-            return;
-        if (__instance.__rpc_exec_stage != NetworkBehaviour.__RpcExecStage.Client || !networkManager.IsClient && !networkManager.IsHost)
-            return;
-        
-        if (!__instance.IsServer)
-            return;
-
-        ApplyDefaults(__instance,false, true);
     }
 
     private static void ApplyDefaults(StartOfRound startOfRound, bool skipMoved, bool silent = false, bool localOnly = false)
