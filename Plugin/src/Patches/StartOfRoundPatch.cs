@@ -2,6 +2,7 @@
 using FurnitureLock.Config;
 using HarmonyLib;
 using MonoMod.RuntimeDetour;
+using Unity.Netcode;
 using Object = UnityEngine.Object;
 
 namespace FurnitureLock.Patches;
@@ -15,9 +16,9 @@ internal class StartOfRoundPatch
     internal static void Init()
     {
 
-        var resetShipFurnitureMethod = AccessTools.Method(typeof(StartOfRound), nameof(StartOfRound.ResetShipFurniture));
+        var resetShipFurnitureMethod = AccessTools.Method(typeof(StartOfRound), nameof(StartOfRound.EndPlayersFiredSequenceClientRpc));
 
-        FurnitureLock.Hooks.Add(new Hook(resetShipFurnitureMethod, OnResetShipFurniture));
+        FurnitureLock.Hooks.Add(new Hook(resetShipFurnitureMethod, OnEjectSequence));
 
 
         var loadUnlockablesMethod = AccessTools.Method(typeof(StartOfRound), nameof(StartOfRound.LoadUnlockables));
@@ -26,17 +27,24 @@ internal class StartOfRoundPatch
 
     }
 
-    private static void OnResetShipFurniture(Action<StartOfRound, bool, bool> original, StartOfRound self, bool onlyClearBoughtFurniture,
-        bool despawnProps)
+    private static void OnEjectSequence(Action<StartOfRound> original, StartOfRound self)
     {
         _isShipResetting = true;
         try
         {
             //run vanilla code
-            original(self, onlyClearBoughtFurniture, despawnProps);
+            original(self);
 
             //on host
             if (!self.IsServer)
+                return;
+
+            var networkManager = self.NetworkManager;
+            if (networkManager == null || !networkManager.IsListening)
+                return;
+
+            if (self.__rpc_exec_stage != NetworkBehaviour.__RpcExecStage.Client ||
+                (!networkManager.IsClient && !networkManager.IsHost))
                 return;
 
             //unlock extra furniture
@@ -65,7 +73,12 @@ internal class StartOfRoundPatch
         _isShipResetting = true;
         try
         {
-            //register unlockables
+            var isNewFile = !ES3.KeyExists("UnlockedShipObjects", GameNetworkManager.Instance.currentSaveFileName);
+
+            //run vanilla function
+            original(self);
+
+            //register other unlockables
             for (var index = 0; index < self.unlockablesList.unlockables.Count; index++)
             {
                 var unlockable = self.unlockablesList.unlockables[index];
@@ -82,11 +95,6 @@ internal class StartOfRoundPatch
                     FurnitureLock.Log.LogError($"Exception registering {unlockable.unlockableName}: {ex}");
                 }
             }
-
-            var isNewFile = !ES3.KeyExists("UnlockedShipObjects", GameNetworkManager.Instance.currentSaveFileName);
-
-            //run vanilla function
-            original(self);
 
             //on host
             if (!self.IsServer)
@@ -155,6 +163,10 @@ internal class StartOfRoundPatch
         var placeableShipObjects = Object.FindObjectsOfType<PlaceableShipObject>();
         foreach (var shipObject in placeableShipObjects)
         {
+
+            if (!shipObject)
+                continue;
+
             var unlockable = startOfRound.unlockablesList.unlockables[shipObject.unlockableID];
             try
             {

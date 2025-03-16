@@ -1,3 +1,6 @@
+### v1.4.1
+- delay moving furniture after firing
+
 ### v1.4.0
 - add ability to unlock extra furniture in new files
 
