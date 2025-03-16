@@ -111,7 +111,7 @@ namespace FurnitureLock
 			            continue;
 		            
 		            unlockableConfig.Locked = true;
-		            unlockableConfig.ApplyValues();
+		            unlockableConfig.LockedConfig.Value = true;
 	            }
 
 	            config.Save();
@@ -127,6 +127,7 @@ namespace FurnitureLock
 			            continue;
 		            
 		            unlockableConfig.Locked = false;
+		            unlockableConfig.LockedConfig.Value = false;
 	            }
 
 	            config.Save();
