@@ -1,3 +1,6 @@
+### v1.4.2
+- allow "copy values" from furniture with `Vector3.zero` as position or rotation
+
 ### v1.4.1
 - delay moving furniture after firing
 

@@ -136,10 +136,10 @@ public class UnlockableConfig
         if (IsPlaceable)
         {
             OnPositionConfigOnSettingChanged();
-            PositionConfig.SettingChanged += (_, _) => OnPositionConfigOnSettingChanged();
+            PositionConfig!.SettingChanged += (_, _) => OnPositionConfigOnSettingChanged();
 
             OnRotationConfigOnSettingChanged();
-            RotationConfig.SettingChanged += (_, _) => OnRotationConfigOnSettingChanged();
+            RotationConfig!.SettingChanged += (_, _) => OnRotationConfigOnSettingChanged();
 
             Locked = LockedConfig.Value;
             LockedConfig.SettingChanged += (_, _) => OnLockedConfigOnSettingChanged();
@@ -173,10 +173,25 @@ public class UnlockableConfig
             return;
         }
 
-        if (Unlockable.placedPosition.Equals(default) || Unlockable.placedRotation.Equals(default))
+        if ((!Unlockable.alreadyUnlocked && !Unlockable.hasBeenUnlockedByPlayer) || Unlockable.inStorage)
         {
-            FurnitureLock.Log.LogError($"{Unlockable.unlockableName} Cannot copy values from default or missing furniture");
+            FurnitureLock.Log.LogError($"{Unlockable.unlockableName} Cannot copy values from furniture that is not spawned");
             return;
+        }
+
+        if (Unlockable.placedPosition.Equals(default) && Unlockable.placedRotation.Equals(default))
+        {
+            if (DefaultsInitialized)
+            {
+                Unlockable.placedPosition = DefaultPosition;
+                Unlockable.placedRotation = DefaultRotation;
+            }
+            else
+            {
+                FurnitureLock.Log.LogError(
+                    $"{Unlockable.unlockableName} Cannot copy values from default or missing furniture");
+                return;
+            }
         }
 
         var pos = Unlockable.placedPosition;
