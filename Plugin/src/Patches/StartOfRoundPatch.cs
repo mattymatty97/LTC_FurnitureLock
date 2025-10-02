@@ -108,10 +108,22 @@ internal class StartOfRoundPatch
                     if (!FurnitureLock.PluginConfig.UnlockableConfigs.TryGetValue(unlockable, out var config))
                         continue;
 
-                    if (config.AlreadyUnlocked && !unlockable.hasBeenUnlockedByPlayer)
+                    try
                     {
-                        self.UnlockShipObject(config.UnlockableID);
-                        config.ApplyValues(null, false, true);
+                        if (config.AlreadyUnlocked && !unlockable.hasBeenUnlockedByPlayer)
+                        {
+                            if (self.SpawnedShipUnlockables.ContainsKey(config.UnlockableID))
+                            {
+                                FurnitureLock.Log.LogFatal($"{unlockable.unlockableName} already exists but was not marked as spawned. please report this to {unlockable.unlockableName} mod author");
+                                continue;
+                            }
+                            self.UnlockShipObject(config.UnlockableID);
+                            config.ApplyValues(null, false, true);
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        FurnitureLock.Log.LogError($"Error processing {unlockable.unlockableName}({config.UnlockableID}):\n{e}");
                     }
                 }
             }
