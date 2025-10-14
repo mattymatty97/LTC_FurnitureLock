@@ -1,4 +1,5 @@
-﻿using HarmonyLib;
+﻿using FurnitureLock.Utils;
+using HarmonyLib;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -13,7 +14,7 @@ internal class ShipBuildModeManagerPatch
         var methodInfo =
             AccessTools.Method(typeof(StartOfRound), nameof(StartOfRound.ReturnUnlockableFromStorageClientRpc));
 
-        if (Utils.TryGetRpcID(methodInfo, out var id))
+        if (methodInfo.TryGetRpcID(out var id))
         {
             _returnUnlockableFromStorageClientRpcID = id;
         }
@@ -56,9 +57,7 @@ internal class ShipBuildModeManagerPatch
     [HarmonyPriority(Priority.Last)]
     private static bool PreventStore(ShipBuildModeManager __instance, NetworkObjectReference objectRef, int playerWhoStored)
     {
-        var networkManager = __instance.NetworkManager;
-        if (__instance.__rpc_exec_stage != NetworkBehaviour.__RpcExecStage.Server ||
-            !networkManager.IsServer && !networkManager.IsHost)
+        if (!__instance.IsRPCServerStage())
             return true;
         
         if (!objectRef.TryGet(out var networkObject))
@@ -109,14 +108,10 @@ internal class ShipBuildModeManagerPatch
         NetworkObjectReference objectRef,
         ref int playerWhoMoved)
     {
-        var networkManager = __instance.NetworkManager;
-        if (networkManager == null || !networkManager.IsListening)
+        if (!__instance.IsRPCServerStage())
             return;
         
-        if (__instance.__rpc_exec_stage != NetworkBehaviour.__RpcExecStage.Server 
-            || !networkManager.IsServer 
-            && !networkManager.IsHost 
-            || !objectRef.TryGet(out var networkObject))
+        if (objectRef.TryGet(out var networkObject))
             return;
         
         var componentInChildren = networkObject.gameObject.GetComponentInChildren<PlaceableShipObject>();

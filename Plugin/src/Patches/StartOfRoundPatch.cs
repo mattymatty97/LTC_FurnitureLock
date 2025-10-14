@@ -1,9 +1,8 @@
 ﻿using System;
 using FurnitureLock.Config;
+using FurnitureLock.Utils;
 using HarmonyLib;
 using MonoMod.RuntimeDetour;
-using Unity.Netcode;
-using Object = UnityEngine.Object;
 
 namespace FurnitureLock.Patches;
 
@@ -12,7 +11,7 @@ internal class StartOfRoundPatch
 {
 
     private static bool _isShipResetting;
-
+    
     internal static void Init()
     {
 
@@ -32,19 +31,12 @@ internal class StartOfRoundPatch
         _isShipResetting = true;
         try
         {
+            var shouldRun = self.IsServer && self.IsRPCClientStage();
+            
             //run vanilla code
             original(self);
 
-            //on host
-            if (!self.IsServer)
-                return;
-
-            var networkManager = self.NetworkManager;
-            if (networkManager == null || !networkManager.IsListening)
-                return;
-
-            if (self.__rpc_exec_stage != NetworkBehaviour.__RpcExecStage.Client ||
-                (!networkManager.IsClient && !networkManager.IsHost))
+            if (!shouldRun)
                 return;
 
             //unlock extra furniture
@@ -112,7 +104,7 @@ internal class StartOfRoundPatch
                     {
                         if (config.AlreadyUnlocked && !unlockable.hasBeenUnlockedByPlayer)
                         {
-                            if (self.SpawnedShipUnlockables.ContainsKey(config.UnlockableID))
+                            if (unlockable.unlockableType != 0 && self.SpawnedShipUnlockables.ContainsKey(config.UnlockableID))
                             {
                                 FurnitureLock.Log.LogFatal($"{unlockable.unlockableName} already exists but was not marked as spawned. please report this to {unlockable.unlockableName} mod author");
                                 continue;
@@ -172,7 +164,7 @@ internal class StartOfRoundPatch
     private static void ApplyDefaults(StartOfRound startOfRound, bool skipMoved, bool silent = false, bool localOnly = false)
     {
        
-        var placeableShipObjects = Object.FindObjectsOfType<PlaceableShipObject>();
+        var placeableShipObjects = UnityEngine.Object.FindObjectsOfType<PlaceableShipObject>();
         foreach (var shipObject in placeableShipObjects)
         {
 

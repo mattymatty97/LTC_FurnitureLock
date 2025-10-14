@@ -16,7 +16,7 @@
         
         <PackageReference
             Include="LethalCompany.GameLibs.Steam"
-            Version="69.0.1-ngd.0"
+            Version="*-*"
             Private="False"
             Publicize="True"
         />

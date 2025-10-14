@@ -1,3 +1,6 @@
+### v1.4.4
+- Update for v73
+
 ### v1.4.3
 - Add try-catch to limit issues during auto-unlocking of furniture
 - Add sanity check during auto-unlocking of furniture in case of bad data from other mods
