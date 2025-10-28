@@ -1,3 +1,7 @@
+### v1.4.5
+- Fix furniture not getting locked into position  
+<small><small>i cut away a negation during v73 update</small></small>
+
 ### v1.4.4
 - Update for v73
 

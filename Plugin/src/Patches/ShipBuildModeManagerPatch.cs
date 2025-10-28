@@ -108,10 +108,11 @@ internal class ShipBuildModeManagerPatch
         NetworkObjectReference objectRef,
         ref int playerWhoMoved)
     {
+        
         if (!__instance.IsRPCServerStage())
             return;
         
-        if (objectRef.TryGet(out var networkObject))
+        if (!objectRef.TryGet(out var networkObject))
             return;
         
         var componentInChildren = networkObject.gameObject.GetComponentInChildren<PlaceableShipObject>();
